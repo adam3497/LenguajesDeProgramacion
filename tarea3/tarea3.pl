@@ -27,5 +27,14 @@ intersec([H|T], List2, List3) :-
     ;
         intersec(T, List2, List3).
 
-
-/* Función diferencia de conjuntos */
+/* Función diferencia de conjuntos 
+    Esta función le resta a la Lista 1, la Lista 2*/
+diferencia([], [], []) :- !.
+diferencia([], _, []) :- !.
+diferencia(List1, [], List1) :- !.
+diferencia([H|T], List2, List3) :-
+    (member(H, List2)) ->
+        diferencia(T, List2, List3)
+    ;
+        List3 = [H|Res],
+        diferencia(T, List2, Res).
