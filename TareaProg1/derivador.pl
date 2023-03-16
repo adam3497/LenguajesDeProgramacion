@@ -42,12 +42,47 @@ d(Fx/Gx, X, (Dfx*Gx - Fx*Dgx)/Fxsqrt) :-
     d(Gx, X, Dgx),
     Fxsqrt = Fx^2.
 
-/* Caso 6: la derivada del sen(x): (sin(x))' = cos(x) */
+/* Caso 6: la derivada del sen(x) con cadena: (sin(f(x)))' = cos(f(x))*f'(x) */
 d(sin(Fx), X, cos(Fx)*Dfx) :-
     !,
     d(Fx, X, Dfx).
 
-/* Caso 7: la derivada del cos(x): (cos(x))' = -sen(x) */
+/* Caso 7: la derivada del cos(x) con cadena: (cos(f(x)))' = -sen(f(x))*f'(x) */
 d(cos(Fx), X, -sin(Fx)*Dfx) :-
     !,
     d(Fx, X, Dfx).
+
+/* Caso 8: la derivada del logarítmo: log'(f(x)) = (1/f(x))*f'(x) */
+d(log(Fx), X, (1/Fx)*Dfx) :-
+    !,
+    d(Fx, X, Dfx).
+
+/* Funciones para convertir expresiones en listas en preorden */
+
+/* tolist(expression -> list) */
+tolist(X, X) :- atom(X), !.
+tolist(N, N) :- number(N), !.
+
+/* tolist de expresiones con suma */
+tolist(A+B, [+, LA, LB]) :-
+    tolist(A, LA),
+    tolist(B, LB).
+
+/* tolist de expresiones con resta */
+tolist(A-B, [-, LA, LB]) :-
+    tolist(A, LA),
+    tolist(B, LB).
+
+/* tolist de expresiones con multiplicación */
+tolist(A*B, [*, LA, LB]) :-
+    tolist(A, LA),
+    tolist(B, LB).
+
+/* tolist de expresiones con división */
+tolist(A/B, [/, LA, LB]) :-
+    tolist(A, LA),
+    tolist(B, LB).
+
+/* tolist de expresiones con potencia */
+tolist(A^N, [^,N, LA]) :-
+    tolist(A, LA).
