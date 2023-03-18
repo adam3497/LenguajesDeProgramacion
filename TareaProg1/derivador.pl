@@ -86,3 +86,98 @@ tolist(A/B, [/, LA, LB]) :-
 /* tolist de expresiones con potencia */
 tolist(A^N, [^,N, LA]) :-
     tolist(A, LA).
+
+/* Funciones para reducir la salida de tolist */
+simple(A) :- atom(A), !.
+simple(A) :- number(A), !.
+
+/* Reducción de la suma */
+reduce([+, A, B], [+, A, B]) :-
+    simple(A),
+    simple(B). 
+
+reduce([+,A,B], [+|Parameters]) :-
+    !,
+    reduce(A, LA),
+    reduce(B, LB),
+    ((member(+,LA)) ->
+        combine(LA, LB, Parameters), print(Parameters)
+    ;
+        Parameters = [LA, LB]).
+
+/* Reducción de la resta */
+reduce([-, A, B], [-, A, B]) :-
+    simple(A),
+    simple(B).
+
+reduce([-,A,B], [-|Parameters]) :-
+    !,
+    reduce(A, LA), print(LA) ,
+    reduce(B, LB), print(LB) ,
+    ((member(-,LA)) ->
+        combine(LA, LB, Parameters), print(Parameters)
+    ;
+        Parameters = [LA, LB]).
+
+/* Reducción de la multiplicación */
+reduce([*, A, B], [*, A, B]) :-
+    simple(A),
+    simple(B).
+
+reduce([*,A,B], [*|Parameters]) :-
+    !,
+    reduce(A, LA),
+    reduce(B, LB),
+    ((member(*,LA)) ->
+        combine(LA, LB, Parameters), print(Parameters)
+    ;
+        Parameters = [LA, LB]).
+
+/* Reducción de la división */
+reduce([/, A, B], [/, A, B]) :-
+    simple(A),
+    simple(B).
+
+reduce([/,A,B], [/|Parameters]) :-
+    !,
+    reduce(A, LA),
+    reduce(B, LB),
+    ((member('/',LA)) ->
+        combine(LA, LB, Parameters), print(Parameters)
+    ;
+        Parameters = [LA, LB]).
+
+reduce(X, X) :- !.
+
+/* Funciones para combinar listas con mismo operador */
+
+/* Combine con suma */
+combine([+|A], [+|B], Result) :-
+    !,
+    append(A,B, Result).
+combine([+|A],B, [B|A]) :- !.
+combine(A,[+|B], [A|B]) :- !.
+
+/* Combine con resta */
+combine([-|A],[-|B], Result) :-
+    !,
+    append(A,B, Result).
+combine([-|A],B, [B|A]) :- !.
+combine(A,[-|B], [A|B]) :- !.
+
+/* Combine con multiplicación */
+combine([*|A],[*|B], Result) :-
+    !,
+    append(A,B, Result).
+combine([*|A],B, [B|A]) :- !.
+combine(A,[*|B], [A|B]) :- !.
+
+/* Combine con división */
+combine([/|A], [/|B], Result) :-
+    !,
+    append(A,B, Result).
+combine([/|A],B, [B|A]) :- !.
+combine(A,[/|B], [A|B]) :- !.
+
+/* Combinación de dos elementos en general */
+combine(A,B,[A,B]) :- !.
