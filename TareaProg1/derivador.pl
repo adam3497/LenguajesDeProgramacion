@@ -3,6 +3,12 @@
    Estudiante: Adrián Amador Ávila
 */
 
+/* Función principal que hace uso de las demás funciones para simplificar la expresión */
+derivar(A,B,R) :-
+    d(A,B,Df), print(Df),
+    tolist(Df, Ldf), print(Ldf),
+    reduce(Ldf, R).
+
 /* Caso 1: derivar X con respecto a X */
 d(X, X, 1) :- !.
 
@@ -64,35 +70,31 @@ tolist(X, X) :- atom(X), !.
 tolist(N, N) :- number(N), !.
 
 /* tolist de expresiones con suma */
-tolist(A+B, [+, LA, LB]) :-
+tolist(A+B, [+,LA,LB]) :-
     tolist(A, LA),
     tolist(B, LB).
 
 /* tolist de expresiones con resta */
-tolist(A-B, [-, LA, LB]) :-
+tolist(A-B, [-,LA,LB]) :-
     tolist(A, LA),
     tolist(B, LB).
 
 /* tolist de expresiones con multiplicación */
-tolist(A*B, [*, LA, LB]) :-
+tolist(A*B, [*,LA,LB]) :-
     tolist(A, LA),
     tolist(B, LB).
 
 /* tolist de expresiones con división */
-tolist(A/B, [/, LA, LB]) :-
+tolist(A/B, [/,LA,LB]) :-
     tolist(A, LA),
     tolist(B, LB).
-
-/* tolist de expresiones con potencia */
-tolist(A^N, [^,N, LA]) :-
-    tolist(A, LA).
 
 /* Funciones para reducir la salida de tolist */
 simple(A) :- atom(A), !.
 simple(A) :- number(A), !.
 
 /* Reducción de la suma */
-reduce([+, A, B], [+, A, B]) :-
+reduce([+,A,B], [+,A,B]) :-
     simple(A),
     simple(B). 
 
@@ -103,10 +105,10 @@ reduce([+,A,B], [+|Parameters]) :-
     ((member(+,LA)) ->
         combine(LA, LB, Parameters), print(Parameters)
     ;
-        Parameters = [LA, LB]).
+        Parameters = [LA,LB]).
 
 /* Reducción de la resta */
-reduce([-, A, B], [-, A, B]) :-
+reduce([-,A,B], [-,A,B]) :-
     simple(A),
     simple(B).
 
@@ -117,10 +119,10 @@ reduce([-,A,B], [-|Parameters]) :-
     ((member(-,LA)) ->
         combine(LA, LB, Parameters), print(Parameters)
     ;
-        Parameters = [LA, LB]).
+        Parameters = [LA,LB]).
 
 /* Reducción de la multiplicación */
-reduce([*, A, B], [*, A, B]) :-
+reduce([*,A,B], [*,A,B]) :-
     simple(A),
     simple(B).
 
@@ -131,10 +133,10 @@ reduce([*,A,B], [*|Parameters]) :-
     ((member(*,LA)) ->
         combine(LA, LB, Parameters), print(Parameters)
     ;
-        Parameters = [LA, LB]).
+        Parameters = [LA,LB]).
 
 /* Reducción de la división */
-reduce([/, A, B], [/, A, B]) :-
+reduce([/,A,B], [/,A,B]) :-
     simple(A),
     simple(B).
 
@@ -145,7 +147,7 @@ reduce([/,A,B], [/|Parameters]) :-
     ((member('/',LA)) ->
         combine(LA, LB, Parameters), print(Parameters)
     ;
-        Parameters = [LA, LB]).
+        Parameters = [LA,LB]).
 
 reduce(X, X) :- !.
 
@@ -181,3 +183,16 @@ combine(A,[/|B], [A|B]) :- !.
 
 /* Combinación de dos elementos en general */
 combine(A,B,[A,B]) :- !.
+
+/* Funciones para simplificar la lista en preorden */
+simplify([+,A,B], Result) :-
+    number(A),
+    number(B),
+    Result is A+B.
+
+/* Funciones de suma de elementos de una lista */
+sumlist([X],X) :- !.
+sumlist([H|T], S) :- 
+    sum(T,X), 
+    S is H+X.
+
