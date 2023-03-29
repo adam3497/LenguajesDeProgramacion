@@ -185,6 +185,8 @@ combine(A,[/|B], [A|B]) :- !.
 combine(A,B,[A,B]) :- !.
 
 /* Funciones para simplificar la lista en preorden */
+
+/* Funciones de suma de elementos de una lista */
 sum([],0) :- !.
 sum(L, Result) :-
     sum_aux(L, [], 0, Result).
@@ -209,11 +211,3 @@ sum_aux([H|T], Res, Rsum, Result) :-
     sum_aux(T, Res1, Rsum, Raux),print('Raux:'+Raux),
     Result = Raux.
 
-/* Funciones de suma de elementos de una lista */
-sumlist([X],X) :- !.
-sumlist(L, S) :-
-    sumlist(L, 0, [], S).
-
-sumlist([], 0, [], 0) :- !.
-sumlist([], Sn, [], Sn) :- !.
-sumlist([], 0, Res, Res) :- !.
