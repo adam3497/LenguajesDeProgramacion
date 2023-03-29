@@ -185,14 +185,35 @@ combine(A,[/|B], [A|B]) :- !.
 combine(A,B,[A,B]) :- !.
 
 /* Funciones para simplificar la lista en preorden */
-simplify([+,A,B], Result) :-
-    number(A),
-    number(B),
-    Result is A+B.
+sum([],0) :- !.
+sum(L, Result) :-
+    sum_aux(L, [], 0, Result).
+
+sum_aux([],[],0,0) :- !.
+sum_aux([],Res,0,Res) :- !.
+sum_aux([],[],Rsum,Rsum) :- !.
+sum_aux([],Res,Rsum,Result) :-
+    !,print(Res),print(Rsum),print('Before appending'),
+    append([Rsum],Res, Res1),print(Res1),
+    Result = Res1,print('After appending'),print(Result).
+
+sum_aux([H|T], Res, Rsum, Result) :-
+    number(H),
+    Rsum1 is H+Rsum,
+    sum_aux(T, Res, Rsum1, Raux),
+    Result = Raux.
+
+sum_aux([H|T], Res, Rsum, Result) :-
+    (atom(H);(not(atom(H)),not(number(H)))),
+    append(Res, [H], Res1),print('Res1:'+Res1),print('Rsum:'+Rsum),
+    sum_aux(T, Res1, Rsum, Raux),print('Raux:'+Raux),
+    Result = Raux.
 
 /* Funciones de suma de elementos de una lista */
 sumlist([X],X) :- !.
-sumlist([H|T], S) :- 
-    sum(T,X), 
-    S is H+X.
+sumlist(L, S) :-
+    sumlist(L, 0, [], S).
 
+sumlist([], 0, [], 0) :- !.
+sumlist([], Sn, [], Sn) :- !.
+sumlist([], 0, Res, Res) :- !.
