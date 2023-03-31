@@ -491,6 +491,31 @@ simplest_times(A, K, X) :-
     K = 0, !,
     X = A.
 
+solve_div(A, 0, A) :- !.
+solve_div(A, K, R) :-
+    number(A),
+    K1 is K-1,
+    solve_div(A, K1, R1),
+    R is R1/A, !.
+
+solve_div(A, K, R) :-
+    (atom(A);not(number(A))),
+    K1 is K-1,
+    solve_div(A, K1, R1),
+    R = R1/A, !.
+
+simplest_div(A, K, X) :-
+    number(A), !,
+    solve_div(A, K, X).
+
+simplest_div(A, 0, A) :- 
+    (atom(A);not(number(A))), !.
+
+simplest_div(A, K, X) :-
+    (atom(A);not(number(A))),
+    K \= 0, !,
+    solve_div(A, K, X).
+
 /* Funciones para transformar y simplificar una lista de suma en expresión */
 sum_expression([], 0) :- !.
 sum_expression([A], A) :- !.
@@ -628,6 +653,51 @@ times_aux([H|T], Res, Rtimes, Result) :-
     (atom(H);(not(atom(H)),not(number(H)))),
     append(Res, [H], Res1),
     times_aux(T, Res1, Rtimes, Raux),
+    Result = Raux.
+
+/* Funciones para transformar y simplificar una lista de división en expresión */
+div_expression([], 1) :- !.
+div_expression([A], A) :- !.
+div_expression(L, Expression) :-
+    div_list(L, L1),
+    ((number(L1)) -> 
+        Expression = L1
+    ;
+        div_expression_aux(L1, Expression)),
+    !.
+
+div_expression_aux([H|T], Expression) :-
+    elements_in(T, H, Amount),
+    delete(T, H, Td),
+    simplest_div(H, Amount, Sh),
+    div_expression(Td, Expression1),
+    ((Expression1 \= 1) ->
+        Expression = Sh / Expression1
+    ;
+        Expression = Sh), !.
+
+/* Funciones para dividir elementos que son números dentro de la lista */
+div_list([],0) :- !.
+div_list(L, Result) :-
+    div_aux(L, [], 1, Result).
+
+div_aux([],[],1,1) :- !.
+div_aux([],Res,1,Res) :- !.
+div_aux([],[],Rdiv,Rdiv) :- !.
+div_aux([],Res,Rdiv,Result) :-
+    append([Rdiv], Res, Res1),
+    Result = Res1.
+
+div_aux([H|T], Res, Rdiv, Result) :-
+    (atom(H);(not(atom(H)),not(number(H)))),
+    append(Res, [H], Res1),
+    div_aux(T, Res1, Rdiv, Raux),
+    Result = Raux.
+
+div_aux([H|T], Res, Rdiv, Result) :-
+    number(H),
+    Rdiv1 is Rdiv/H,
+    div_aux(T, Res, Rdiv1, Raux),
     Result = Raux.
 
 /* Verificador si una expresión ya está en su forma más simple posible */
