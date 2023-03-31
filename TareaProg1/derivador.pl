@@ -9,7 +9,8 @@ derivar(A,B,R) :-
     d(A,B,Df), print(Df),
     tolist(Df, Ldf), print(Ldf),
     reduce(Ldf, Rdf),
-    simplify(Rdf, R).
+    simplify(Rdf, Sdf), print('Simplest version '=Sdf),
+    to_expression(Sdf, R).
 
 /* Caso 1: derivar X con respecto a X */
 d(X, X, 1) :- !.
@@ -130,7 +131,7 @@ reduce([+,A,B], [+|Parameters]) :-
     reduce(A, LA),
     reduce(B, LB),
     ((member(+,LA)) ->
-        combine(LA, LB, Parameters), print(Parameters)
+        combine(LA, LB, Parameters)
     ;
         Parameters = [LA,LB]).
 
@@ -144,7 +145,7 @@ reduce([-,A,B], [-|Parameters]) :-
     reduce(A, LA), print(LA) ,
     reduce(B, LB), print(LB) ,
     ((member(-,LA)) ->
-        combine(LA, LB, Parameters), print(Parameters)
+        combine(LA, LB, Parameters)
     ;
         Parameters = [LA,LB]).
 
@@ -158,7 +159,7 @@ reduce([*,A,B], [*|Parameters]) :-
     reduce(A, LA),
     reduce(B, LB),
     ((member(*,LA)) ->
-        combine(LA, LB, Parameters), print(Parameters)
+        combine(LA, LB, Parameters)
     ;
         Parameters = [LA,LB]).
 
@@ -172,7 +173,7 @@ reduce([/,A,B], [/|Parameters]) :-
     reduce(A, LA),
     reduce(B, LB),
     ((member('/',LA)) ->
-        combine(LA, LB, Parameters), print(Parameters)
+        combine(LA, LB, Parameters)
     ;
         Parameters = [LA,LB]).
 
@@ -212,23 +213,22 @@ combine(A,B,[A,B]) :- !.
 
 /* Funciones para simplificar la lista en preorden */
 isoperator(H) :-
-    (H = '+';H = '-';H = '*';H = '/';H = '^').
+    (H = (+);H = (-);H = (*);H = ('/');H = (^)).
 
 simplify([],[]) :- !.
 
 simplify([H|T], [H|Res_sim]) :-
-    isoperator(H),
+    isoperator(H), !,
     simplify(T, Res_sim).
 
 simplify([H|T], Result) :-
-    print('H is '= H),
-    (not(isoperator(H)),not(number(H)),not(atom(H))),
+    (not(isoperator(H)),not(number(H)),not(atom(H))), !,
     simplify_aux(H, Resaux),
     simplify(T, Res_sim),
     append(Resaux, Res_sim, Result).
 
 simplify([H|T], [H|Res_sim]) :-
-    (not(isoperator(H)),(atom(H);number(H))),
+    (not(isoperator(H)),(atom(H);number(H))), !,
     simplify(T, Res_sim).
 
 simplify_aux([+,A,B], Result) :-
@@ -254,7 +254,10 @@ simplify_aux([^,A,B], Result) :-
 /*Funciones para simplificar listas de la manera ['operador', A, B] en listas con una sola expresión */
 /* [+,A,B]*/
 istrig(A) :-
-    not(atom(A)),not(number(A)), !.
+    not(atom(A)),
+    not(number(A)),
+    (A = cos(_); A = sin(_); A = -cos(_); A = -sin(_)),
+    !.
 
 simplify_sum([A,B], [Result]) :-
     number(A),number(B),
@@ -412,7 +415,7 @@ simplify_pow([A, Fx], [A^(R1)]) :-
     simplify(Rfx, R1).
 
 /* Funciones para pasar una lista a una expresión */
-to_expression([H|T], Result) :- 
+to_expression([H|T], Result) :-
     to_expression_aux(T, H, Result).
 
 to_expression_aux(L, Operator, Expression) :-
@@ -421,7 +424,8 @@ to_expression_aux(L, Operator, Expression) :-
 
 to_expression_aux(L, Operator, Expression) :-
     Operator = '-', !,
-    sub_expression(L, Expression).
+    reverse(L, Rl),
+    sub_expression(Rl, Expression).
 
 to_expression_aux(L, Operator, Expression) :-
     Operator = '*', !,
@@ -520,18 +524,34 @@ simplest_div(A, K, X) :-
 sum_expression([], 0) :- !.
 sum_expression([A], A) :- !.
 sum_expression(L, Expression) :-
+    write('L is '+L+'\n'),
     sum_list(L, L1),
     sum_expression_aux(L1, Expression), !.
 
+sum_expression_aux([],0) :- !.
 sum_expression_aux([H|T], Expression) :-
-    elements_in(T, H, Amount), print('Amount'=Amount),
-    delete(T, H, Td), print("Trimmed list"=Td),
-    simplest_sum(H, Amount, Sh), print("Simplest"=Sh),
-    sum_expression(Td, Expression1),
+    (number(H);atom(H);istrig(H)),
+    elements_in(T, H, Amount),
+    delete(T, H, Td), write('After deliting '+H+' list looks like '+Td+'\n'),
+    simplest_sum(H, Amount, Sh),
+    write('Tail of current list is'+Td+'\n'),
+    sum_expression_aux(Td, Expression1), write('Expression1 for that tail looks like '+Expression1+'\n'),
     ((Expression1 \= 0) ->
         Expression = Sh + Expression1
     ;
         Expression = Sh), !.
+
+sum_expression_aux([H|T], Expression) :-
+    is_list(H), write('H in current state is '+ H+'\n'),
+    reduce(H, Rh), write('Rh in current state is '+Rh+'\n'),
+    simplify(Rh, Sh), write('Sh in current satate is '+Sh+'\n'),
+    to_expression(Sh, Expression1), write('Expression1 in current state is'-Expression1-'\n'),
+    sum_expression_aux(T, Expression2), write('Expression2 in current state is'+Expression2+'\n'),
+    ((Expression2 \= 0) ->
+        Expression = Expression1 + Expression2
+    ;
+        Expression = Expression1
+    ), !.
 
 /* Funciones para sumar todos los elementos que son un número dentro de la lista, devuelve una lista con
     un elemento que representa la suma de todos los números y todos los otros elementos que no son números */
@@ -567,14 +587,28 @@ sub_expression(L, Expression) :-
     sub_expression_aux(L1, Expression), !.
 
 sub_expression_aux([H|T], Expression) :-
-    elements_in(T, H, Amount), print('Amount'=Amount),
-    delete(T, H, Td), print("Trimmed list"=Td),
-    simplest_sub(H, Amount, Sh), print("Simplest_sub"=Sh),
-    sub_expression(Td, Expression1),
+    (number(H);atom(H);istrig(H)),
+    elements_in(T, H, Amount), write('Amount'=Amount+'\n'),
+    delete(T, H, Td), write("Trimmed list"=Td),
+    simplest_sub(H, Amount, Sh), write("Simplest_sub"=Sh+'\n'),
+    sub_expression_aux(Td, Expression1),
     ((Expression1 \= 0) ->
         Expression = Sh - Expression1
     ;
         Expression = Sh), !.
+
+sub_expression_aux([], 0) :- !.
+sub_expression_aux([H|T], Expression) :-
+    is_list(H), write('H in current state is '+ H+'\n'),
+    reduce(H, Rh), write('Rh in current state is '+Rh+'\n'),
+    simplify(Rh, Sh), write('Sh in current satate is '+Sh+'\n'),
+    to_expression(Sh, Expression1), write('Expression1 in current state is'-Expression1-'\n'),
+    sub_expression_aux(T, Expression2), write('Expression2 in current state is'+Expression2+'\n'),
+    ((Expression2 \= 0) ->
+        Expression = Expression1 - Expression2
+    ;
+        Expression = Expression1
+    ), !.
 
 /* Funciones para restar elementos que son números dentro de la lista */
 sub_list([],0) :- !.
@@ -587,10 +621,10 @@ sub_aux([],_,[],Rsub,Rsub) :- !.
 sub_aux([],_,Res,Rsub,Result) :-
     !,
     append([Rsub], Res, Res1),
-    Result = Res1, print("Res1 is "=Res1).
+    Result = Res1.
 
 sub_aux([H|T], Index, Res, Rsub, Result) :-
-    number(H), print("H is "=H),
+    number(H),
     ((Rsub = 0) ->
         ((Index = 0) ->
             Rsub1 is H
@@ -598,22 +632,21 @@ sub_aux([H|T], Index, Res, Rsub, Result) :-
             Rsub1 is Rsub - H)
     ;
         Rsub1 is Rsub - H), 
-    print("Rsub1 is "=Rsub1),
     Index1 is Index+1,
     sub_aux(T, Index1, Res, Rsub1, Raux),
-    Result = Raux, print("Raux is "=Raux), !.
+    Result = Raux, !.
 
 sub_aux([H|T], Index, Res, Rsub, Result) :-
-    (atom(H);(not(atom(H)),not(number(H)))),print("H is "=H),
+    (atom(H);(not(atom(H)),not(number(H)))),
     Index1 is Index+1,
     sub_aux(T, Index1, [H|Res], Rsub, Raux),
-    Result = Raux, print("Raux is "=Raux), !.
+    Result = Raux, !.
 
 /* Funciones para transformar y simplificar una lista de multiplicación en expresión  */
 times_expression([], 1) :- !.
 times_expression([A], A) :- !.
 times_expression(L, Expression) :-
-    times_list(L, L1),print("Times list is"=L1),
+    times_list(L, L1),
     ((number(L1)) -> 
         Expression = L1
     ;
