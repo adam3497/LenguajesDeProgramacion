@@ -442,6 +442,55 @@ elements_in([H|T], Element, Amount):-
     Element \= H,
     elements_in(T, Element, Amount).
 
+/* Funciones para simplificar elementos repetidos */
+simplest_sum(A, K, X) :-
+    number(A), !,
+    K1 is K+1,
+    X is K1*A.
+
+simplest_sum(A, K, X) :-
+    (atom(A);not(number(A))),
+    K \= 0, !,
+    K1 is K+1,
+    X = K1*A.
+
+simplest_sum(A, K, X) :-
+    (atom(A);not(number(A))),
+    K = 0, !,
+    X = A.
+
+simplest_sub(A, K, X) :-
+    number(A), !,
+    K1 is K+1,
+    X is K1*A.
+
+simplest_sub(A, K, X) :-
+    (atom(A);not(number(A))),
+    K \= 0, !,
+    K1 is K+1,
+    X = K1*A.
+
+simplest_sub(A, K, X) :-
+    (atom(A);not(number(A))),
+    K = 0, !,
+    X = A.
+
+simplest_times(A, K, X) :-
+    number(A), !,
+    K1 is K+1,
+    X is A^K1.
+
+simplest_times(A, K, X) :-
+    (atom(A);not(number(A))),
+    K \= 0, !,
+    K1 is K+1,
+    X = A^K1.
+
+simplest_times(A, K, X) :-
+    (atom(A);not(number(A))),
+    K = 0, !,
+    X = A.
+
 /* Funciones para transformar y simplificar una lista de suma en expresión */
 sum_expression([], 0) :- !.
 sum_expression([A], A) :- !.
@@ -458,22 +507,6 @@ sum_expression_aux([H|T], Expression) :-
         Expression = Sh + Expression1
     ;
         Expression = Sh), !.
-
-simplest_sum(A, K, X) :-
-    number(A), !,
-    K1 is K+1,
-    X is K1*A.
-
-simplest_sum(A, K, X) :-
-    (atom(A);not(number(A))),
-    K \= 0, !,
-    K1 is K+1,
-    X = K1*A.
-
-simplest_sum(A, K, X) :-
-    (atom(A);not(number(A))),
-    K = 0, !,
-    X = A.
 
 /* Funciones para sumar todos los elementos que son un número dentro de la lista, devuelve una lista con
     un elemento que representa la suma de todos los números y todos los otros elementos que no son números */
@@ -501,8 +534,101 @@ sum_aux([H|T], Res, Rsum, Result) :-
     sum_aux(T, Res1, Rsum, Raux),
     Result = Raux.
 
-/* Funciones de resta de elementos de una lista */
+/* Funciones para transformar y simplificar una lista de suma en expresión */
+sub_expression([], 0) :- !.
+sub_expression([A], A) :- !.
+sub_expression(L, Expression) :-
+    sub_list(L, L1),
+    sub_expression_aux(L1, Expression), !.
 
+sub_expression_aux([H|T], Expression) :-
+    elements_in(T, H, Amount), print('Amount'=Amount),
+    delete(T, H, Td), print("Trimmed list"=Td),
+    simplest_sub(H, Amount, Sh), print("Simplest_sub"=Sh),
+    sub_expression(Td, Expression1),
+    ((Expression1 \= 0) ->
+        Expression = Sh - Expression1
+    ;
+        Expression = Sh), !.
+
+/* Funciones para restar elementos que son números dentro de la lista */
+sub_list([],0) :- !.
+sub_list(L, Result) :-
+    sub_aux(L, 0, [], 0, Result).
+
+sub_aux([],_,[],0,0) :- !.
+sub_aux([],_,Res,0,Res) :- !.
+sub_aux([],_,[],Rsub,Rsub) :- !.
+sub_aux([],_,Res,Rsub,Result) :-
+    !,
+    append([Rsub], Res, Res1),
+    Result = Res1, print("Res1 is "=Res1).
+
+sub_aux([H|T], Index, Res, Rsub, Result) :-
+    number(H), print("H is "=H),
+    ((Rsub = 0) ->
+        ((Index = 0) ->
+            Rsub1 is H
+        ;
+            Rsub1 is Rsub - H)
+    ;
+        Rsub1 is Rsub - H), 
+    print("Rsub1 is "=Rsub1),
+    Index1 is Index+1,
+    sub_aux(T, Index1, Res, Rsub1, Raux),
+    Result = Raux, print("Raux is "=Raux), !.
+
+sub_aux([H|T], Index, Res, Rsub, Result) :-
+    (atom(H);(not(atom(H)),not(number(H)))),print("H is "=H),
+    Index1 is Index+1,
+    sub_aux(T, Index1, [H|Res], Rsub, Raux),
+    Result = Raux, print("Raux is "=Raux), !.
+
+/* Funciones para transformar y simplificar una lista de multiplicación en expresión  */
+times_expression([], 1) :- !.
+times_expression([A], A) :- !.
+times_expression(L, Expression) :-
+    times_list(L, L1),print("Times list is"=L1),
+    ((number(L1)) -> 
+        Expression = L1
+    ;
+        times_expression_aux(L1, Expression)),
+    !.
+
+times_expression_aux([H|T], Expression) :-
+    elements_in(T, H, Amount), print('Amount'=Amount),print('H is'=H),
+    delete(T, H, Td), print("Trimmed list"=Td),
+    simplest_times(H, Amount, Sh), print("Simplest"=Sh),
+    times_expression(Td, Expression1),
+    ((Expression1 \= 1) ->
+        Expression = Sh * Expression1
+    ;
+        Expression = Sh), !.
+
+/* Funciones para multiplicar elementos que son números dentro de la lista */
+times_list([],0) :- !.
+times_list(L, Result) :-
+    times_aux(L, [], 1, Result).
+
+times_aux([],[],1,1) :- !.
+times_aux([],Res,1,Res) :- !.
+times_aux([],[],Rtimes,Rtimes) :- !.
+times_aux([],Res,Rtimes,Result) :-
+    !,
+    append([Rtimes],Res, Res1),
+    Result = Res1.
+
+times_aux([H|T], Res, Rtimes, Result) :-
+    number(H),
+    Rtimes1 is H*Rtimes,print("Rtimes1 is "=Rtimes1),
+    times_aux(T, Res, Rtimes1, Raux),
+    Result = Raux.
+
+times_aux([H|T], Res, Rtimes, Result) :-
+    (atom(H);(not(atom(H)),not(number(H)))),
+    append(Res, [H], Res1),
+    times_aux(T, Res1, Rtimes, Raux),
+    Result = Raux.
 
 /* Verificador si una expresión ya está en su forma más simple posible */
 is_simple_exp(List) :-
