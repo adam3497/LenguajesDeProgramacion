@@ -463,19 +463,40 @@ simplest_sum(A, K, X) :-
     K = 0, !,
     X = A.
 
+solve_sub(A, 1, A) :- (atom(A); number(A); istrig(A)), !.
+solve_sub(A, K, X) :-
+    number(A),
+    K1 is K-1,
+    solve_sub(A, K1, X1),
+    X is X1-A, !.
+
+solve_sub(A, K, X) :-
+    (atom(A);istrig(A)),not(number(A)),
+    K1 is K-1,
+    solve_sub(A, K1, X1),
+    ((A = X1, -Y \= X1, -Y \= A, !, X = 0);
+     (X1 = 0, !, X = -A);
+     (X1 \= 0, -Y = X1, Y = A, !, X = -2*A);
+     (X1 \= 0, -Y = X1, -Y = A, !, X = 0);
+     (X1 \= 0, N*Y = X1, -Y = A, !, N1 is N+1, X = N1*Y);
+     (X1 \= 0, N*Y = X1, Y = A, !, N1 is N-1, X = N1*Y);
+     (X1 \= 0, N*Y = A, -Y = X1, !, N1 is N-1, X = N1*Y);
+     (X1 \= 0, N1*Y = X1, N2*Y = A, !, N3 is N1-N2, X = N3*Y);
+     (X = X1)
+    ), !.
+
 simplest_sub(A, K, X) :-
     number(A), !,
-    K1 is K+1,
-    X is K1*A.
+    K \= 0,
+    solve_sub(A, K, X).
 
 simplest_sub(A, K, X) :-
-    (atom(A);not(number(A))),
+    (atom(A);istrig(A);not(number(A))),
     K \= 0, !,
-    K1 is K+1,
-    X = K1*A.
+    solve_sub(A, K, X).
 
 simplest_sub(A, K, X) :-
-    (atom(A);not(number(A))),
+    (atom(A);number(A);istrig(A)),
     K = 0, !,
     X = A.
 
@@ -588,7 +609,7 @@ sub_expression(L, Expression) :-
 
 sub_expression_aux([H|T], Expression) :-
     (number(H);atom(H);istrig(H)),
-    elements_in(T, H, Amount), write('Amount'=Amount+'\n'),
+    elements_in([H|T], H, Amount), write('Amount'=Amount+'\n'),
     delete(T, H, Td), write("Trimmed list"=Td),
     simplest_sub(H, Amount, Sh), write("Simplest_sub"=Sh+'\n'),
     sub_expression_aux(Td, Expression1),
