@@ -4,13 +4,18 @@
 */
 
 /* Función principal que hace uso de las demás funciones para simplificar la expresión */
+derivar(A, B, 0) :- tolist(A, La), not(member(B,La)), !.
 derivar(A,B,R) :-
     !,
-    d(A,B,Df), print(Df),
-    tolist(Df, Ldf), print(Ldf),
+    d(A,B,Df),
+    derivar_aux(Df, R1),
+    derivar_aux(R1, R), !.
+    
+
+derivar_aux(Expression, Resultexp) :-
+    tolist(Expression, Ldf),
     reduce(Ldf, Rdf),
-    simplify(Rdf, Sdf), print('Simplest version '=Sdf),
-    to_expression(Sdf, R).
+    to_expression(Rdf, Resultexp).
 
 /* Caso 1: derivar X con respecto a X */
 d(X, X, 1) :- !.
@@ -142,8 +147,8 @@ reduce([-,A,B], [-,A,B]) :-
 
 reduce([-,A,B], [-|Parameters]) :-
     !,
-    reduce(A, LA), print(LA) ,
-    reduce(B, LB), print(LB) ,
+    reduce(A, LA),
+    reduce(B, LB),
     ((member(-,LA)) ->
         combine(LA, LB, Parameters)
     ;
@@ -211,208 +216,12 @@ combine(A,[/|B], [A|B]) :- !.
 /* Combinación de dos elementos en general */
 combine(A,B,[A,B]) :- !.
 
-/* Funciones para simplificar la lista en preorden */
-isoperator(H) :-
-    (H = (+);H = (-);H = (*);H = ('/');H = (^)).
-
-simplify([],[]) :- !.
-
-simplify([H|T], [H|Res_sim]) :-
-    isoperator(H), !,
-    simplify(T, Res_sim).
-
-simplify([H|T], Result) :-
-    (not(isoperator(H)),not(number(H)),not(atom(H))), !,
-    simplify_aux(H, Resaux),
-    simplify(T, Res_sim),
-    append(Resaux, Res_sim, Result).
-
-simplify([H|T], [H|Res_sim]) :-
-    (not(isoperator(H)),(atom(H);number(H))), !,
-    simplify(T, Res_sim).
-
-simplify_aux([+,A,B], Result) :-
-    simplify_sum([A,B], Res1),
-    Result = Res1.
-
-simplify_aux([-,A,B], Result) :-
-    simplify_sub([A,B], Res1),
-    Result = Res1.
-
-simplify_aux([*,A,B], Result) :-
-    simplify_times([A,B], Res1),
-    Result = Res1.
-
-simplify_aux([/,A,B], Result) :-
-    simplify_div([A,B], Res1),
-    Result = Res1.
-
-simplify_aux([^,A,B], Result) :-
-    simplify_pow([A,B], Res1),
-    Result = Res1.
-
-/*Funciones para simplificar listas de la manera ['operador', A, B] en listas con una sola expresión */
-/* [+,A,B]*/
+/* Función para verificar si A es trigonométrico */
 istrig(A) :-
     not(atom(A)),
     not(number(A)),
     (A = cos(_); A = sin(_); A = -cos(_); A = -sin(_)),
     !.
-
-simplify_sum([A,B], [Result]) :-
-    number(A),number(B),
-    Result is A+B, !.
-
-simplify_sum([A,B], [A,B]) :-
-    ((atom(A),number(B));(number(A),atom(B))), !.
-
-simplify_sum([A,B], [A,B]) :-
-    atom(A),atom(B), !.
-
-simplify_sum([A,B], [2*A]) :-
-    istrig(A),istrig(B),
-    A = B, !.
-
-simplify_sum([A,B], [A,B]) :-
-    istrig(A),istrig(B),
-    A \= B, !.
-
-/* [-,A,B] */
-simplify_sub([A,B], [Result]) :-
-    number(A),number(B),
-    Result is A-B, !.
-
-simplify_sub([A,B], [A,-B]) :-
-    ((atom(A),number(B));(number(A),atom(B))), !.
-
-simplify_sub([A,B], [0]) :-
-    atom(A),atom(B), 
-    A = B, !.
-
-simplify_sub([A,B], [A, -B]) :-
-    atom(A),atom(B), 
-    A \= B, !.
-
-simplify_sub([A,B], [0]) :-
-    istrig(A),istrig(B),
-    A = B, !.
-
-simplify_sub([A,B], [A, -B]) :-
-    istrig(A),istrig(B),
-    A \= B, !.
-
-simplify_sub([A,B], [A, -B]) :-
-    istrig(A),(number(B);atom(B)), !.
-
-simplify_sub([A,B], [B, -A]) :-
-    istrig(B),(number(A);atom(A)), !.
-
-/* [*,A,B] */
-simplify_times([A,B], [Result]) :-
-    number(A),number(B),
-    Result is A*B, !.
-
-simplify_times([A,B], [0]) :-
-    (atom(A),number(B)), B = 0, !.
-
-simplify_times([A,B], [B*A]) :-
-    (atom(A),number(B)), B \= 0, !.
-
-simplify_times([A,B], [0]) :-
-    (number(A),atom(B)), A = 0, !.
-
-simplify_times([A,B], [A*B]) :-
-    (number(A),atom(B)), !.
-
-simplify_times([A,B], [A^2]) :-
-    atom(A),atom(B), 
-    A = B,
-    !.
-
-simplify_times([A,B], [A*B]) :-
-    atom(A),atom(B), 
-    A \= B,
-    !.
-
-simplify_times([A,B], [2*A]) :-
-    istrig(A),istrig(B),
-    A = B, !.
-
-simplify_times([A,B], [A*B]) :-
-    istrig(A),istrig(B),
-    A \= B, !.
-
-simplify_times([A,B], [B*A]) :-
-    istrig(A),(number(B);atom(B)), B \= 0, !.
-
-simplify_times([A,B], [0]) :-
-    istrig(A),(number(B);atom(B)), B = 0, !.
-
-simplify_times([A,B], [0]) :-
-    istrig(B),(number(A);atom(A)), A = 0, !.
-
-simplify_times([A,B], [A*B]) :-
-    istrig(B),(number(A);atom(A)), A \= 0, !.
-
-/* ['/',A,B] */
-simplify_div([A,B], [Result]) :-
-    number(A),number(B),
-    Result is A/B, !.
-
-simplify_div([A,B], [(B/A)]) :-
-    (atom(A),number(B)), !.
-
-simplify_div([A,B], [(0)]) :-
-    (number(A),atom(B)), A = 0, !.
-
-simplify_div([A,B], [(A/B)]) :-
-    (number(A),atom(B)), A \= 0, !.
-
-simplify_div([A,B], [1]) :-
-    atom(A),atom(B), 
-    A = B,
-    !.
-
-simplify_div([A,B], [(A/B)]) :-
-    atom(A),atom(B), 
-    A \= B,
-    !.
-
-simplify_div([A,B], [1]) :-
-    istrig(A),istrig(B),
-    A = B, !.
-
-simplify_div([A,B], [(A/B)]) :-
-    istrig(A),istrig(B),
-    A \= B, !.
-
-simplify_div([A,B], [A/B]) :-
-    istrig(A),(number(B);atom(B)), !.
-
-simplify_div([A,B], [0]) :-
-    istrig(B),(number(A);atom(A)), A = 0, !.
-
-simplify_div([A,B], [A/B]) :-
-    istrig(B),(number(A);atom(A)), A \= 0, !.
-
-/* [^,A,N] */
-simplify_pow([A,N], [A]) :-
-    number(N),
-    N = 1, !.
-
-simplify_pow([_,N], [1]) :-
-    number(N),
-    N = 0, !.
-
-simplify_pow([A,Fx], [A^Fx]) :-
-    atom(Fx), !.
-
-simplify_pow([A, Fx], [A^(R1)]) :-
-    not(atom(Fx)),not(number(Fx)),
-    print('Fx is'=Fx),
-    reduce(Fx, Rfx),
-    print('Rfx is'=Rfx),
-    simplify(Rfx, R1).
 
 /* Funciones para pasar una lista a una expresión */
 to_expression([H|T], Result) :-
@@ -434,6 +243,10 @@ to_expression_aux(L, Operator, Expression) :-
 to_expression_aux(L, Operator, Expression) :-
     Operator = '/', !,
     div_expression(L, Expression).
+
+to_expression_aux(L, Operator, Expression) :-
+    Operator = '^', !,
+    pow_expression(L, Expression).
 
 /* Funciones para encontrar la cantidad de elementos iguales al elemento dentro de la lista */
 elements_in([], _, 0):- !.
@@ -506,13 +319,13 @@ simplest_times(A, K, X) :-
     X is A^K1.
 
 simplest_times(A, K, X) :-
-    (atom(A);not(number(A))),
+    (atom(A);istrig(A);not(number(A))),
     K \= 0, !,
     K1 is K+1,
     X = A^K1.
 
 simplest_times(A, K, X) :-
-    (atom(A);not(number(A))),
+    (atom(A);istrig(A);not(number(A))),
     K = 0, !,
     X = A.
 
@@ -524,53 +337,167 @@ solve_div(A, K, R) :-
     R is R1/A, !.
 
 solve_div(A, K, R) :-
-    (atom(A);not(number(A))),
+    (atom(A);istrig(A),not(number(A))),
     K1 is K-1,
     solve_div(A, K1, R1),
-    R = R1/A, !.
+    ((R1 = A, R = 1);
+     (R1 \= A, R = R1/A)
+    ), !.
 
 simplest_div(A, K, X) :-
     number(A), !,
     solve_div(A, K, X).
 
 simplest_div(A, 0, A) :- 
-    (atom(A);not(number(A))), !.
+    (atom(A);number(A);istrig(A)), !.
 
 simplest_div(A, K, X) :-
-    (atom(A);not(number(A))),
+    (atom(A);istrig(A);not(number(A))),
     K \= 0, !,
     solve_div(A, K, X).
 
 /* Funciones para transformar y simplificar una lista de suma en expresión */
+pow_expression([], 0) :- !.
+pow_expression([A], A) :- !.
+pow_expression([X,N], Pot) :-
+    number(X),number(N), !,
+    Pot is X^N.
+pow_expression([X,N], Pot) :-
+    (atom(X);istrig(X);not(is_list(X))), number(N), !,
+    ((N = 1) ->
+        Pot = X;
+        Pot = X^N
+    ).
+
 sum_expression([], 0) :- !.
 sum_expression([A], A) :- !.
 sum_expression(L, Expression) :-
-    write('L is '+L+'\n'),
     sum_list(L, L1),
     sum_expression_aux(L1, Expression), !.
 
+sum_expression_aux(A, A) :- (number(A);atom(A);istrig(A)), !.
 sum_expression_aux([],0) :- !.
 sum_expression_aux([H|T], Expression) :-
-    (number(H);atom(H);istrig(H)),
+    (number(H);atom(H);istrig(H);(compound(H),not(is_list(H)))),
     elements_in(T, H, Amount),
-    delete(T, H, Td), write('After deliting '+H+' list looks like '+Td+'\n'),
+    delete(T, H, Td),
     simplest_sum(H, Amount, Sh),
-    write('Tail of current list is'+Td+'\n'),
-    sum_expression_aux(Td, Expression1), write('Expression1 for that tail looks like '+Expression1+'\n'),
+    sum_expression_aux(Td, Expression1),
     ((Expression1 \= 0) ->
-        Expression = Sh + Expression1
-    ;
-        Expression = Sh), !.
+        Expression = Sh + Expression1;
+        Expression = Sh
+    ), !.
 
 sum_expression_aux([H|T], Expression) :-
-    is_list(H), write('H in current state is '+ H+'\n'),
-    reduce(H, Rh), write('Rh in current state is '+Rh+'\n'),
-    simplify(Rh, Sh), write('Sh in current satate is '+Sh+'\n'),
-    to_expression(Sh, Expression1), write('Expression1 in current state is'-Expression1-'\n'),
-    sum_expression_aux(T, Expression2), write('Expression2 in current state is'+Expression2+'\n'),
+    is_list(H),
+    reduce(H, Rh),
+    to_expression(Rh, Expression1),
+    sum_expression_aux(T, Expression2),
     ((Expression2 \= 0) ->
-        Expression = Expression1 + Expression2
-    ;
+        Expression = Expression1 + Expression2;
+        Expression = Expression1
+    ), !.
+
+/* Funciones para transformar y simplificar una lista de división en expresión */
+div_expression([], 1) :- !.
+div_expression([A], A) :- !.
+div_expression(L, Expression) :-
+    div_list(L, L1),
+    ((number(L1)) -> 
+        Expression = L1;
+        div_expression_aux(L1, Expression)),
+    !.
+
+div_expression_aux([], 1) :- !.
+div_expression_aux(A, A) :- (number(A);atom(A);istrig(A)), !.
+div_expression_aux([H|T], Expression) :-
+    (number(H);atom(H);istrig(H);(compound(H),not(is_list(H)))),
+    elements_in(T, H, Amount),
+    delete(T, H, Td),
+    simplest_div(H, Amount, Sh),
+    div_expression_aux(Td, Expression1),
+    ((Expression1 \= 1) ->
+        Expression = Sh / Expression1;
+        Expression = Sh
+    ), !.
+
+div_expression_aux([H|T], Expression) :-
+    is_list(H),
+    reduce(H, Rh),
+    to_expression(Rh, Expression1),
+    div_expression_aux(T, Expression2),
+    ((Expression2 \= 1) ->
+        Expression = Expression1 / Expression2;
+        Expression = Expression1
+    ), !.
+
+/* Funciones para transformar y simplificar una lista de suma en expresión */
+sub_expression([], 0) :- !.
+sub_expression([A], A) :- !.
+sub_expression(L, Expression) :-
+    sub_list(L, L1),
+    sub_expression_aux(L1, Expression), !.
+
+sub_expression_aux([], 0) :- !.
+sub_expression_aux(A, A) :- (number(A);atom(A);istrig(A)), !.
+sub_expression_aux([H|T], Expression) :-
+    (number(H);atom(H);istrig(H);(compound(H),not(is_list(H)))),
+    elements_in([H|T], H, Amount),
+    delete(T, H, Td),
+    simplest_sub(H, Amount, Sh),
+    sub_expression_aux(Td, Expression1),
+    ((Expression1 \= 0) ->
+        Expression = Sh - Expression1;
+        Expression = Sh
+    ), !.
+
+sub_expression_aux([H|T], Expression) :-
+    is_list(H),
+    reduce(H, Rh),
+    to_expression(Rh, Expression1),
+    sub_expression_aux(T, Expression2),
+    ((Expression2 \= 0) ->
+        Expression = Expression1 - Expression2;
+        Expression = Expression1
+    ), !.
+
+/* Funciones para transformar y simplificar una lista de multiplicación en expresión  */
+times_expression([], 1) :- !.
+times_expression([A], A) :- !.
+times_expression(L, Expression) :-
+    times_list(L, L1),
+    ((number(L1)) -> 
+        Expression = L1;
+        times_expression_aux(L1, Expression)),
+    !.
+
+times_expression_aux([], 1) :- !.
+times_expression_aux(A, A) :- (number(A);atom(A);istrig(A)), !.
+times_expression_aux([H|T], Expression) :-
+    (number(H);atom(H);istrig(H);(compound(H),not(is_list(H)))),
+    elements_in(T, H, Amount),
+    delete(T, H, Td),
+    simplest_times(H, Amount, Sh),
+    times_expression_aux(Td, Expression1),
+    ((Expression1 \= 1, Sh \= 0, Expression1 \= 0, !,
+        ((number(Sh), N1*Y = Expression1, !, N2 is Sh*N1, Expression = N2*Y);
+         (number(Expression1), N1*Y = Sh, !, N2 is Expression1*N1, Expression = N2*Y);
+         (number(Sh), (atom(Expression1);istrig(Expression1)), !, Expression = Sh * Expression1);
+         (number(Expression1), (atom(Sh);istrig(Sh)), !, Expression = Expression1 * Sh);
+         (number(Sh),number(Expression1), !, Expression = Expression1*Sh);
+         (Expression = Sh*Expression1))
+     );
+     ((Sh = 0;Expression1 = 0), !, Expression = 0); 
+     (Expression = Sh)
+    ), !.
+
+times_expression_aux([H|T], Expression) :-
+    is_list(H),
+    reduce(H, Rh),
+    to_expression(Rh, Expression1),
+    times_expression_aux(T, Expression2),
+    ((Expression2 \= 1) ->
+        Expression = Expression1 * Expression2;
         Expression = Expression1
     ), !.
 
@@ -600,37 +527,6 @@ sum_aux([H|T], Res, Rsum, Result) :-
     sum_aux(T, Res1, Rsum, Raux),
     Result = Raux.
 
-/* Funciones para transformar y simplificar una lista de suma en expresión */
-sub_expression([], 0) :- !.
-sub_expression([A], A) :- !.
-sub_expression(L, Expression) :-
-    sub_list(L, L1),
-    sub_expression_aux(L1, Expression), !.
-
-sub_expression_aux([H|T], Expression) :-
-    (number(H);atom(H);istrig(H)),
-    elements_in([H|T], H, Amount), write('Amount'=Amount+'\n'),
-    delete(T, H, Td), write("Trimmed list"=Td),
-    simplest_sub(H, Amount, Sh), write("Simplest_sub"=Sh+'\n'),
-    sub_expression_aux(Td, Expression1),
-    ((Expression1 \= 0) ->
-        Expression = Sh - Expression1
-    ;
-        Expression = Sh), !.
-
-sub_expression_aux([], 0) :- !.
-sub_expression_aux([H|T], Expression) :-
-    is_list(H), write('H in current state is '+ H+'\n'),
-    reduce(H, Rh), write('Rh in current state is '+Rh+'\n'),
-    simplify(Rh, Sh), write('Sh in current satate is '+Sh+'\n'),
-    to_expression(Sh, Expression1), write('Expression1 in current state is'-Expression1-'\n'),
-    sub_expression_aux(T, Expression2), write('Expression2 in current state is'+Expression2+'\n'),
-    ((Expression2 \= 0) ->
-        Expression = Expression1 - Expression2
-    ;
-        Expression = Expression1
-    ), !.
-
 /* Funciones para restar elementos que son números dentro de la lista */
 sub_list([],0) :- !.
 sub_list(L, Result) :-
@@ -648,11 +544,11 @@ sub_aux([H|T], Index, Res, Rsub, Result) :-
     number(H),
     ((Rsub = 0) ->
         ((Index = 0) ->
-            Rsub1 is H
-        ;
-            Rsub1 is Rsub - H)
-    ;
-        Rsub1 is Rsub - H), 
+            Rsub1 is H;
+            Rsub1 is Rsub - H
+        );
+        Rsub1 is Rsub - H
+    ), 
     Index1 is Index+1,
     sub_aux(T, Index1, Res, Rsub1, Raux),
     Result = Raux, !.
@@ -662,27 +558,6 @@ sub_aux([H|T], Index, Res, Rsub, Result) :-
     Index1 is Index+1,
     sub_aux(T, Index1, [H|Res], Rsub, Raux),
     Result = Raux, !.
-
-/* Funciones para transformar y simplificar una lista de multiplicación en expresión  */
-times_expression([], 1) :- !.
-times_expression([A], A) :- !.
-times_expression(L, Expression) :-
-    times_list(L, L1),
-    ((number(L1)) -> 
-        Expression = L1
-    ;
-        times_expression_aux(L1, Expression)),
-    !.
-
-times_expression_aux([H|T], Expression) :-
-    elements_in(T, H, Amount), print('Amount'=Amount),print('H is'=H),
-    delete(T, H, Td), print("Trimmed list"=Td),
-    simplest_times(H, Amount, Sh), print("Simplest"=Sh),
-    times_expression(Td, Expression1),
-    ((Expression1 \= 1) ->
-        Expression = Sh * Expression1
-    ;
-        Expression = Sh), !.
 
 /* Funciones para multiplicar elementos que son números dentro de la lista */
 times_list([],0) :- !.
@@ -699,7 +574,7 @@ times_aux([],Res,Rtimes,Result) :-
 
 times_aux([H|T], Res, Rtimes, Result) :-
     number(H),
-    Rtimes1 is H*Rtimes,print("Rtimes1 is "=Rtimes1),
+    Rtimes1 is H*Rtimes,
     times_aux(T, Res, Rtimes1, Raux),
     Result = Raux.
 
@@ -708,27 +583,6 @@ times_aux([H|T], Res, Rtimes, Result) :-
     append(Res, [H], Res1),
     times_aux(T, Res1, Rtimes, Raux),
     Result = Raux.
-
-/* Funciones para transformar y simplificar una lista de división en expresión */
-div_expression([], 1) :- !.
-div_expression([A], A) :- !.
-div_expression(L, Expression) :-
-    div_list(L, L1),
-    ((number(L1)) -> 
-        Expression = L1
-    ;
-        div_expression_aux(L1, Expression)),
-    !.
-
-div_expression_aux([H|T], Expression) :-
-    elements_in(T, H, Amount),
-    delete(T, H, Td),
-    simplest_div(H, Amount, Sh),
-    div_expression(Td, Expression1),
-    ((Expression1 \= 1) ->
-        Expression = Sh / Expression1
-    ;
-        Expression = Sh), !.
 
 /* Funciones para dividir elementos que son números dentro de la lista */
 div_list([],0) :- !.
@@ -753,13 +607,3 @@ div_aux([H|T], Res, Rdiv, Result) :-
     Rdiv1 is Rdiv/H,
     div_aux(T, Res, Rdiv1, Raux),
     Result = Raux.
-
-/* Verificador si una expresión ya está en su forma más simple posible */
-is_simple_exp(List) :-
-    length(List,3),
-    simple_list(List), !.
-
-simple_list([]) :- true, !.
-simple_list([H|T]) :-
-    (atom(H);number(H);H = cos(_);H = sin(_);H = -cos(_);H = -sin(_)),
-    simple_list(T).
