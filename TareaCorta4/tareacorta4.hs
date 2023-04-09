@@ -71,4 +71,11 @@ compongaRel ((a,b):xs) (y:ys) =  ([(a, snd y) | b == fst y])
                                     ++ compongaRel [(a,b)] ys
                                     ++ compongaRel xs (y:ys)
 
+{- Problema 6
+   Función que toma una lista de hileras y devuelve una única hilera que contiene a todas las 
+   hileras separadas por comas
+-}
+separePorComas :: [String] -> String
+separePorComas [] = ""
+separePorComas (x:xs) = x ++ (if null xs then "" else ", " ++ separePorComas xs) 
 
