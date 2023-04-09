@@ -2,6 +2,7 @@
 {-# HLINT ignore "Redundant if" #-}
 {-# HLINT ignore "Use isJust" #-}
 {-# HLINT ignore "Redundant bracket" #-}
+{-# HLINT ignore "Use :" #-}
 module TareaCorta4 where
 import Data.List
 
@@ -46,7 +47,7 @@ merge ((n:ns):(m:ms)) = sort ( take 500 (n: ns ++ m ++ [y | x <- ms, y <- x]))
 -- Problema 5
 type RelBinaria a b = [(a,b)]
 
-{- 
+{- 1
    Función que evalúa True cuando para cada par (x,y) en la lista, no hay otro par 
    (x,z) en la lista tal que y /= z
 -}
@@ -56,4 +57,18 @@ esFuncion [(x,y)] = True
 esFuncion (x:xs) =   if lookup (fst x) xs /= Nothing && lookup (fst x) xs /= Just (snd x)
                         then False
                      else esFuncion xs
+
+{- 2
+   Función que devuelve una composición de los argumentos, si y solo si, existe un par (x y)
+   en la relación dada como primer argumento, y hay otro par (y z) en la relación dada como 
+   segundo argumento, tal que el resultado sea (x z) 
+-}
+compongaRel :: (Eq a, Eq b, Eq c) => (RelBinaria a b) -> (RelBinaria b c) -> (RelBinaria a c)
+compongaRel [] [] = []
+compongaRel [] (y:ys) = []
+compongaRel (x:xs) [] = []
+compongaRel ((a,b):xs) (y:ys) =  ([(a, snd y) | b == fst y])
+                                    ++ compongaRel [(a,b)] ys
+                                    ++ compongaRel xs (y:ys)
+
 
