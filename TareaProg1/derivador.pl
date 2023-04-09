@@ -4,17 +4,45 @@
 */
 
 /* Función principal que hace uso de las demás funciones para simplificar la expresión */
-derivar(A, B, 0) :- tolist(A, La), not(member(B,La)), !.
-derivar(A,B,R) :-
+verify_varibale_trig(A, Var) :-
+    (cos(Y) = A; -cos(Y) = A; sin(Y) = A; -sin(Y) = A),
+    write("Y is :":Y:"\n"),
+    (compound(Y) ->
+        (write("Y is compound :":Y:"\n")
+        ,tolist(Y, Ly),
+        verify_variable(Ly, Var));
+        (write("Y is not compound :":Y:"\n"),
+        Y \= Var)), !.
+verify_variable([], _) :- !.
+verify_variable(A, Var) :- 
+    (istrig(A) -> 
+        (write("A is trignometric :":A:"\n"),
+        verify_varibale_trig(A, Var));
+        A \= Var
+    ), !.
+verify_variable([H|T], Var) :-
+    (number(H);atom(H);istrig(H)),
+    H \= Var,
+    verify_variable(T, Var), !.
+verify_variable([H|T], Var) :-
+    is_list(H),
+    verify_variable(H, Var),
+    verify_variable(T, Var), !.
+
+derivar(A, B, R) :- 
+    tolist(A, La), write("The list is "=La+"\n"),
+    (not(verify_variable(La, B)) ->
+        derivar_(A, B, R);
+        R = 0).
+derivar_(A,B,R) :-
     !,
     d(A,B,Df),
     derivar_aux(Df, R1),
     derivar_aux(R1, R), !.
     
-
 derivar_aux(Expression, Resultexp) :-
-    tolist(Expression, Ldf),
-    reduce(Ldf, Rdf),
+    tolist(Expression, Ldf), write("Ldf is ":Ldf:"\n"),
+    reduce(Ldf, Rdf), write("Rdf is ":Rdf:"\n"),
     to_expression(Rdf, Resultexp).
 
 /* Caso 1: derivar X con respecto a X */
@@ -224,6 +252,7 @@ istrig(A) :-
     !.
 
 /* Funciones para pasar una lista a una expresión */
+to_expression(A, A) :- not(is_list(A)), !.
 to_expression([H|T], Result) :-
     to_expression_aux(T, H, Result).
 
