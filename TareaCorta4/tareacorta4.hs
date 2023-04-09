@@ -96,3 +96,6 @@ enLineasSeparadas (x:xs) = x ++ "\n" ++ (if null xs then "" else enLineasSeparad
 separadoPor :: String -> [String] -> String
 separadoPor opcion [] = "" 
 separadoPor opcion (x:xs) = x ++ (if null xs then "" else opcion ++ " " ++ separadoPor opcion xs)
+
+
+
