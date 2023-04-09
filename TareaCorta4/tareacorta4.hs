@@ -77,7 +77,7 @@ compongaRel ((a,b):xs) (y:ys) =  ([(a, snd y) | b == fst y])
 -}
 separePorComas :: [String] -> String
 separePorComas [] = ""
-separePorComas (x:xs) = x ++ (if null xs then "" else ", " ++ separePorComas xs) 
+separePorComas (x:xs) = x ++ (if null xs then "" else ", " ++ separePorComas xs)
 
 {- Problema 7
    Función que toma una lista de strings y evalúa a un único string que cuando es impreso
@@ -89,3 +89,10 @@ enLineasSeparadas (x:xs) = x ++ "\n" ++ (if null xs then "" else enLineasSeparad
 -- enLineasSeparadas con la función unlines del Prelude de Haskell
 -- enLineasSeparadas strings = unlines strings 
 
+
+{- Problema 8
+   Función general de separePorComas y enLineasSeparadas
+-}
+separadoPor :: String -> [String] -> String
+separadoPor opcion [] = "" 
+separadoPor opcion (x:xs) = x ++ (if null xs then "" else opcion ++ " " ++ separadoPor opcion xs)
