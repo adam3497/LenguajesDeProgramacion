@@ -79,3 +79,13 @@ separePorComas :: [String] -> String
 separePorComas [] = ""
 separePorComas (x:xs) = x ++ (if null xs then "" else ", " ++ separePorComas xs) 
 
+{- Problema 7
+   Función que toma una lista de strings y evalúa a un único string que cuando es impreso
+   muestra las hileras en lineas separadas
+-}
+enLineasSeparadas :: [String] -> String
+enLineasSeparadas [] = ""
+enLineasSeparadas (x:xs) = x ++ "\n" ++ (if null xs then "" else enLineasSeparadas xs)
+-- enLineasSeparadas con la función unlines del Prelude de Haskell
+-- enLineasSeparadas strings = unlines strings 
+
