@@ -97,6 +97,8 @@ separadoPor :: String -> [String] -> String
 separadoPor opcion [] = ""
 separadoPor opcion (x:xs) = x ++ (if null xs then "" else opcion ++ " " ++ separadoPor opcion xs)
 
+{- Problema 9 - ver problema9.hs -}
+
 {- Problema 10
    Función que toma una lista de Integers, y retorna una lista con cada elemento duplicado
 -}
@@ -109,5 +111,7 @@ dupliqueTodo [] = []
 -- Función dupliqueTodo usando foldr
 dupliqueTodo integers = foldr (f) [] integers
                            where f x y = x*2 : y
+
+{- Problema 11 - ver archivo problema11.hs -}
 
 
