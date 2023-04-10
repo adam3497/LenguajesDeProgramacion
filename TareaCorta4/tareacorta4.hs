@@ -114,4 +114,31 @@ dupliqueTodo integers = foldr (f) [] integers
 
 {- Problema 11 - ver archivo problema11.hs -}
 
+{- Problema 12 
+   Funciones para tipo de dato data Tree a
+-}
+
+data Tree a = Node a [Tree a] deriving Show
+
+-- 1 Función sumTree que suma todos los nodos del árbol
+sumeTree :: Tree Integer -> Integer
+sumeTree tree = case preorderTree tree of 
+                  [] -> 0
+                  xs -> sum xs
+
+{- 2
+   Función que trasnforma una estructura de dato de tipo "Tree a" a una lista 
+   en preorder con todos sus nodos 
+-}
+preorderTree :: Tree Integer -> [Integer]
+preorderTree (Node a []) = [a]
+preorderTree (Node a (x:xs)) = a : preorderTree x ++ foldr (f) [] xs 
+                                                   where f y z = preorderTree y ++ z
+
+-- 3 Declaración Haskell instance que hace que Tree sea una instancia de la clase Functor
+instance Functor Tree where
+   fmap :: (a -> b) -> Tree a -> Tree b
+   fmap f (Node a []) = Node (f a) []
+   fmap f (Node a (x:xs)) = Node (f a) ([fmap f x] ++ foldr (g) [] xs)
+                                                      where g y z = fmap f y : z
 
