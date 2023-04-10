@@ -94,8 +94,20 @@ enLineasSeparadas (x:xs) = x ++ "\n" ++ (if null xs then "" else enLineasSeparad
    Función general de separePorComas y enLineasSeparadas
 -}
 separadoPor :: String -> [String] -> String
-separadoPor opcion [] = "" 
+separadoPor opcion [] = ""
 separadoPor opcion (x:xs) = x ++ (if null xs then "" else opcion ++ " " ++ separadoPor opcion xs)
 
+{- Problema 10
+   Función que toma una lista de Integers, y retorna una lista con cada elemento duplicado
+-}
+dupliqueTodo :: [Integer] -> [Integer]
+dupliqueTodo [] = []
+
+-- Función dupliqueTodo usando la comprensión de listas
+--dupliqueTodo integers = [x*2 | x <- integers]
+
+-- Función dupliqueTodo usando foldr
+dupliqueTodo integers = foldr (f) [] integers
+                           where f x y = x*2 : y
 
 
