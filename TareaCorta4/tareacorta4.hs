@@ -44,7 +44,7 @@ merge [] = []
 merge [[]]  = []
 merge [xs] = xs
 merge (xs:ys:xss) = merge $ merge' xs ys : xss
-               where 
+               where
                   merge' [] ys = ys
                   merge' xs [] = xs
                   merge' (x:xs) (y:ys)
@@ -159,24 +159,30 @@ sumTree' = foldTree (+) (+) 0
 preorderTree' :: Tree a -> [a]
 preorderTree' = foldTree (:) (++) []
 
-instance Functor Tree where 
+instance Functor Tree where
    fmap :: (a -> b) -> Tree a -> Tree b
    fmap f = foldTree (Node . f) (:) []
 
 
--- Problema 13
-newtype Set a = Set {contains :: a -> Bool}
-conjunto :: (a -> Bool) -> (Set a)
+{- Problema 13
+   Definición de un tipo data Set a el cual permite funciones como conjunto, union, interseccion,
+   miembro y complemento
+-}
+data Set a = Set (a -> Bool)
+
+conjunto :: (a -> Bool) -> Set a
 conjunto = Set
 
-union :: Set a -> Set a -> Set a
-union s1 s2 = Set $ \x -> s1 `contains` x || s2 `contains` x
+myUnion :: Set a -> Set a -> Set a
+myUnion (Set f) (Set g) = Set (\x -> f x || g x)
 
-inserseccion :: Set a -> Set a -> Set a
-inserseccion s1 s2 = Set $ \x -> s1 `contains` x && s2 `contains` x
+interseccion :: Set a -> Set a -> Set a
+interseccion (Set f) (Set g) = Set (\x -> f x && g x)
 
 miembro :: Set a -> a -> Bool
-miembro s1 a = s1 `contains` a
+miembro (Set f) = f
 
---complemento :: Set a -> Set a
+complemento :: Set a -> Set a
+complemento (Set f) = Set (not . f)
+
 
