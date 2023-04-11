@@ -3,6 +3,7 @@
 {-# HLINT ignore "Use isJust" #-}
 {-# HLINT ignore "Redundant bracket" #-}
 {-# HLINT ignore "Use :" #-}
+{-# HLINT ignore "Use newtype instead of data" #-}
 module TareaCorta4 where
 import Data.List
 
@@ -122,7 +123,7 @@ data Tree a = Node a [Tree a] deriving Show
 
 -- 1 Función sumTree que suma todos los nodos del árbol
 sumeTree :: Tree Integer -> Integer
-sumeTree tree = case preorderTree tree of 
+sumeTree tree = case preorderTree tree of
                   [] -> 0
                   xs -> sum xs
 
@@ -132,7 +133,7 @@ sumeTree tree = case preorderTree tree of
 -}
 preorderTree :: Tree Integer -> [Integer]
 preorderTree (Node a []) = [a]
-preorderTree (Node a (x:xs)) = a : preorderTree x ++ foldr (f) [] xs 
+preorderTree (Node a (x:xs)) = a : preorderTree x ++ foldr (f) [] xs
                                                    where f y z = preorderTree y ++ z
 
 -- 3 Declaración Haskell instance que hace que Tree sea una instancia de la clase Functor
@@ -141,4 +142,25 @@ instance Functor Tree where
    fmap f (Node a []) = Node (f a) []
    fmap f (Node a (x:xs)) = Node (f a) ([fmap f x] ++ foldr (g) [] xs)
                                                       where g y z = fmap f y : z
+
+-- 4 Función foldTree análoga a la función foldr para listas 
+--foldTree :: (a -> b -> c) -> (c -> b -> b) -> b -> Tree a -> c
+--foldTree f g b (Node a l) = f a 
+
+-- Problema 13
+
+newtype Set a = Set {contains :: a -> Bool}
+conjunto :: (a -> Bool) -> (Set a) 
+conjunto = Set
+
+union :: Set a -> Set a -> Set a
+union s1 s2 = Set $ \x -> s1 `contains` x || s2 `contains` x
+
+inserseccion :: Set a -> Set a -> Set a
+inserseccion s1 s2 = Set $ \x -> s1 `contains` x && s2 `contains` x
+
+miembro :: Set a -> a -> Bool
+miembro s1 a = s1 `contains` a
+
+--complemento :: Set a -> Set a
 
