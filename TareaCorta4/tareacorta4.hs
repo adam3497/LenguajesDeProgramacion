@@ -137,20 +137,30 @@ preorderTree (Node a (x:xs)) = a : preorderTree x ++ foldr (f) [] xs
                                                    where f y z = preorderTree y ++ z
 
 -- 3 Declaración Haskell instance que hace que Tree sea una instancia de la clase Functor
-instance Functor Tree where
+{- instance Functor Tree where
    fmap :: (a -> b) -> Tree a -> Tree b
    fmap f (Node a []) = Node (f a) []
    fmap f (Node a (x:xs)) = Node (f a) ([fmap f x] ++ foldr (g) [] xs)
-                                                      where g y z = fmap f y : z
+                                                      where g y z = fmap f y : z -}
 
 -- 4 Función foldTree análoga a la función foldr para listas 
---foldTree :: (a -> b -> c) -> (c -> b -> b) -> b -> Tree a -> c
---foldTree f g b (Node a l) = f a 
+foldTree :: (a -> b -> c) -> (c -> b -> b) -> b -> Tree a -> c
+foldTree f g z (Node a ts) = f a (foldr (g . foldTree f g z) z ts)
+
+-- Funciones creadas en los puntos anteriores pero ahora utilizando el foldTree 
+sumTree' :: Tree Integer -> Integer
+sumTree' = foldTree (+) (+) 0
+preorderTree' :: Tree a -> [a]
+preorderTree' = foldTree (:) (++) []
+
+instance Functor Tree where 
+   fmap :: (a -> b) -> Tree a -> Tree b
+   fmap f = foldTree (Node . f) (:) []
+
 
 -- Problema 13
-
 newtype Set a = Set {contains :: a -> Bool}
-conjunto :: (a -> Bool) -> (Set a) 
+conjunto :: (a -> Bool) -> (Set a)
 conjunto = Set
 
 union :: Set a -> Set a -> Set a
