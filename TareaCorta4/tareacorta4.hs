@@ -42,8 +42,14 @@ componga (f:fs) arg = f (componga fs arg)
 merge :: (Ord a) => [[a]] -> [a]
 merge [] = []
 merge [[]]  = []
-merge [x:xs] = sort (x:xs)
-merge ((n:ns):(m:ms)) = sort ( take 500 (n: ns ++ m ++ [y | x <- ms, y <- x]))
+merge [xs] = xs
+merge (xs:ys:xss) = merge $ merge' xs ys : xss
+               where 
+                  merge' [] ys = ys
+                  merge' xs [] = xs
+                  merge' (x:xs) (y:ys)
+                     | x <= y = x : merge' xs (y:ys)
+                     | otherwise = y : merge' (x:xs) ys
 
 -- Problema 5
 type RelBinaria a b = [(a,b)]
