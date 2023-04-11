@@ -185,4 +185,30 @@ miembro (Set f) = f
 complemento :: Set a -> Set a
 complemento (Set f) = Set (not . f)
 
+{- Problema 14 -}
+data Exp = BoolLit Bool | IntLit Integer | CharLit Char
+         | Sub Exp Exp
+         | Equal Exp Exp 
+         | If Exp Exp Exp 
+data OType = OBool | OInt | OChar | OWrong 
+               deriving (Eq, Show)
+
+-- Función que toma una Exp y retorna su OType 
+tipoDe :: Exp -> OType
+tipoDe (BoolLit _) = OBool
+tipoDe (IntLit _) = OInt
+tipoDe (CharLit _) = OChar
+tipoDe (Sub e1 e2) = case (tipoDe e1, tipoDe e2) of
+                        (OInt, OInt) -> OInt
+                        _ -> OWrong
+tipoDe (Equal e1 e2) = case (tipoDe e1, tipoDe e2) of
+                        (OInt, OInt) -> OBool
+                        (OChar, OChar) -> OBool
+                        (OBool, OBool) -> OBool
+                        _ -> OWrong
+tipoDe (If e1 e2 e3) = case (tipoDe e1, tipoDe e2, tipoDe e3) of
+                        (OBool, t1, t2) -> if t1 == t2 then t1 else OWrong
+                        _ -> OWrong
+
+
 
