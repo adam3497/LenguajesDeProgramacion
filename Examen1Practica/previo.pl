@@ -14,3 +14,9 @@ previo(N, nodo(Valor, _, Der), X) :-
     (X1 \= nil ->
         X = X1;
         X = Valor).
+
+sublistas([], []).
+sublistas([X|L], [X|S]) :-
+    sublistas(L, S).
+sublistas(L, [_|S]) :-
+    sublistas(L, S).
