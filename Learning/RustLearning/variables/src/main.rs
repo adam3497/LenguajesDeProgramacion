@@ -57,7 +57,6 @@ fn main() {
 
     println!("my_array: [{}, {}, {}, {}, {}]", my_array[0], my_array[1], my_array[2], my_array[3], my_array[4]);
     println!("another_array: [{}, {}, {}, {}, {}]", another_array[0], another_array[1], another_array[2], another_array[3], another_array[4]);
-
     
     // Cambiar el tipo de dato de una variable
     let spaces = "    ";
