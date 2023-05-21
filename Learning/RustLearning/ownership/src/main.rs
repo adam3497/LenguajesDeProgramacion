@@ -10,6 +10,7 @@ fn main() {
     // Variables and Data Interacting with Move
     let x = 5;
     let y = x; // here we are making a copy of the value in x and binding it to y.
+    println!("{}", y);
     /*
     This happens since integers are simple values with a known fixed size 
     those two 5 values are pushed onto the stack
@@ -18,6 +19,7 @@ fn main() {
     // But it's different when dealing with variables of unknown fixed size such as Strings
     let s1 = String::from("Hello");
     let s2 = s1; // move s1 into s2
+    println!("{}", s2);
 
     /*  
     A String is made up of 3 parts: pointer, length and capacity
