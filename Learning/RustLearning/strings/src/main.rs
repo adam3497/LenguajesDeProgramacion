@@ -20,5 +20,28 @@ fn main() {
     s.push('l');
     println!("{s}");
 
+    // concatenation with the + Operator or the format! macro
+    let s1 = String::from("Hello, ");
+    let s2 = String::from("world!");
+    let s3 = s1 + &s2; // note s1 has been moved here and can no longer be used
 
+    println!("s1 + s2 = {s3}");
+
+    let s1 = String::from("tic");
+    let s2 = String::from("tac");
+    let s3 = String::from("toe");
+
+    let s = format!("{s1}-{s2}-{s3}");
+    println!("s = {s}");
+
+    // Iterating over String
+    // using chars to get each individual character (notice here each character takes 2 bytes)
+    for c in "Зд".chars() {
+        println!("{c}");
+    }
+
+    // bytes method returns each raw byte 
+    for b in "Зд".bytes() {
+        println!("{b}");
+    }
 }
