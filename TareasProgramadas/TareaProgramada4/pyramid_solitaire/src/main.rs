@@ -24,13 +24,13 @@ enum Rank {
 #[derive(Debug, Copy, Clone)]
 struct Card {
     suit: Suit,
-    rank: Rank
+    rank: Rank,
 }
 
 impl Card {
     // Función interna del struct que permite crear una nueva carta
     fn new(suit: Suit, rank: Rank) -> Card {
-        Card { suit, rank}
+        Card { suit, rank }
     }
 }
 
@@ -86,8 +86,9 @@ impl PyramidSolitaire {
         let mut cards = Vec::new();
 
         for suit in &suits {
+            let mut i = 0;
             for rank in &ranks {
-                cards.push(Card::new(*suit, *rank));
+                cards.push(Card::new(*suit, *rank,));
             }
         }
 
@@ -115,18 +116,114 @@ impl PyramidSolitaire {
     }
 
     /*
+    This function takes the rank of a card struct and returns its string value
+    representation.
+    */
+    fn get_rank_string(&self, card_rank: &Rank) -> String {
+        match card_rank {
+            Rank::Ace => String::from("A"),
+            Rank::Number(num) => num.to_string(),
+            Rank::Z => String::from("Z"),
+            Rank::Jack => String::from("J"),
+            Rank::Queen => String::from("Q"),
+            Rank::King => String::from("K"),
+        }
+    }
+
+    /*
+    This functions matches the suit of a card struct and returns its string value
+    representation. 
+    */
+    fn get_suit_string(&self, card_suit: &Suit) -> String {
+        match card_suit {
+            Suit::Clubs => String::from("T"),
+            Suit::Diamonds => String::from("D"),
+            Suit::Hearts => String::from("C"),
+            Suit::Spades => String::from("E"),
+        }
+    }
+
+    /*
+    This function takes the suit of a card struct and returns its string color 
+    representation depending on its suit.
+    */
+    fn get_color_string(&self, card_suit: &Suit) -> String {
+        match card_suit {
+            Suit::Clubs | Suit::Spades => String::from("n"),
+            Suit::Hearts | Suit::Diamonds => String::from("r"),
+        }
+    }
+
+    /*
+    This function prints the draw, waste and success piles in the screen, above the pyramid.
+    */
+    fn print_piles(&self) {
+        println!();
+        let draw_first =  &self.draw_pile.first().unwrap();
+        let draw_rank = self.get_rank_string(&draw_first.rank);
+        let draw_suit = self.get_suit_string(&draw_first.suit);
+        let draw_color = self.get_color_string(&draw_first.suit);
+
+        print!("Draw pile: {draw_rank}{draw_suit}{draw_color}");
+        print!(" | ");
+        print!("Waste pile: ___");
+        // Print some spaces between the draw/waste piles and the success pile
+        let indent = self.pyramid.len() * 4;
+        for _ in 0..indent {
+            print!(" ");
+        }
+
+        print!("Success pile: ___");
+        println!();
+    }
+
+    /*
     Función para imprimir la pirámide en pantalla
     */
     fn print_pyramid(&self) {
+        println!();
+        let mut indent = self.pyramid.len() * 6;
+
         for row in &self.pyramid {
+            for _ in 0..indent {
+                print!(" ");
+            }
+
             for card in row {
                 match card {
-                    Some(card) => print!("{:?}", card),
-                    None => print!("     "),
+                    Some(card) => {
+                        let rank = match card.rank {
+                            Rank::Ace => String::from("A"),
+                            Rank::Number(num) => num.to_string(),
+                            Rank::Z => String::from("Z"),
+                            Rank::Jack => String::from("J"),
+                            Rank::Queen => String::from("Q"),
+                            Rank::King => String::from("K"), 
+                        };
+
+                        let suit = match card.suit {
+                            Suit::Clubs => String::from("T"),
+                            Suit::Diamonds => String::from("D"),
+                            Suit::Hearts => String::from("C"),
+                            Suit::Spades => String::from("E"),
+                        };
+
+                        let color = match card.suit {
+                            Suit::Clubs | Suit::Spades => String::from("n"),
+                            Suit::Hearts | Suit::Diamonds => String::from("r"),
+                        };
+
+                        print!("{rank}{suit}{color}  ", rank = rank, suit = suit, color = color);
+                    }
+
+                    None => print!("                     "),
                 }
             }
+
+            indent -= 2;
             println!();
         }
+        println!();
     }
 
     /*
@@ -162,10 +259,11 @@ impl PyramidSolitaire {
 
     fn play(&mut self) {
         self.initialize();
+        self.print_piles();
         self.print_pyramid();
 
         // Loop que permite jugar hasta que no se puedan hacer movimientos o el judador gane
-        loop {
+        /* loop {
             let (row1, col1, row2, col2) = self.get_user_input();
             if row1.is_none() || col1.is_none() || row2.is_none() || col2.is_none() {
                 println!("Game ended. Goodbye!");
@@ -188,17 +286,28 @@ impl PyramidSolitaire {
             }
 
 
-        }
+        } */
     }
 
     /*
     Función para obtener las coordenadas 
     */
-    fn get_user_input(&self) -> (Option<usize>, Option<usize>, Option<usize>, Option<usize>) {
+    /* fn get_user_input(&self) -> (Option()) {
         use std::io::{self, BufRead};
 
-        println!("Introduzca las coordenadas de las dos cartas a remover (row1 col1 row2 col2), or -1 to quit:");
+        println!("Introduzca las coordenadas de las dos cartas a remover (row1 col1 row2 col2), o 'quit' o 'q'  para salir:");
+        println!("> ");
+        
+        let mut input = String::new();
+        io::stdin()
+            .read_line(&mut input)
+            .expect("Failed to read input.");
+        
+        let input = input.trim().to_lowercase();
 
+        if input == "quit" || input == "q" {
+            return (None, None);
+        }
         let stdin = io::stdin();
         let mut lines = stdin.lock().lines();
 
@@ -220,7 +329,7 @@ impl PyramidSolitaire {
                 Some(col2 as usize),
             )
         }
-    }
+    } */
 }
 
 
