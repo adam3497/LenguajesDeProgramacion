@@ -39,6 +39,7 @@ struct PyramidSolitaire {
     pyramid: Vec<Vec<Option<Card>>>,
     draw_pile: Vec<Card>,
     waste_pile: Vec<Card>,
+    success_pile: Vec<Card>,
 }
 
 impl PyramidSolitaire {
@@ -48,6 +49,7 @@ impl PyramidSolitaire {
             pyramid: vec![], 
             draw_pile: vec![], 
             waste_pile: vec![],
+            success_pile: vec![],
         }
     }
 
@@ -86,9 +88,8 @@ impl PyramidSolitaire {
         let mut cards = Vec::new();
 
         for suit in &suits {
-            let mut i = 0;
             for rank in &ranks {
-                cards.push(Card::new(*suit, *rank,));
+                cards.push(Card::new(*suit, *rank));
             }
         }
 
@@ -159,21 +160,45 @@ impl PyramidSolitaire {
     */
     fn print_piles(&self) {
         println!();
-        let draw_first =  &self.draw_pile.first().unwrap();
-        let draw_rank = self.get_rank_string(&draw_first.rank);
-        let draw_suit = self.get_suit_string(&draw_first.suit);
-        let draw_color = self.get_color_string(&draw_first.suit);
+        if self.draw_pile.len() == 0 {
+            print!("Draw pile: ___");
+        } else {
+            let draw_first =  &self.draw_pile.first().unwrap();
+            let draw_rank = self.get_rank_string(&draw_first.rank);
+            let draw_suit = self.get_suit_string(&draw_first.suit);
+            let draw_color = self.get_color_string(&draw_first.suit);
 
-        print!("Draw pile: {draw_rank}{draw_suit}{draw_color}");
+            print!("Draw pile: {draw_rank}{draw_suit}{draw_color}");
+        }
+        
         print!(" | ");
-        print!("Waste pile: ___");
+        if self.waste_pile.len() == 0 {
+            print!("Waste pile: ___");
+        } else {
+            let top_waste = &self.waste_pile.last().unwrap();
+            let waste_rank = self.get_rank_string(&top_waste.rank);
+            let waste_suit = self.get_suit_string(&top_waste.suit);
+            let waste_color = self.get_color_string(&top_waste.suit);
+            
+            print!("Waste pile: {waste_rank}{waste_suit}{waste_color}");
+        }
+        
         // Print some spaces between the draw/waste piles and the success pile
         let indent = self.pyramid.len() * 4;
         for _ in 0..indent {
             print!(" ");
         }
+        
+        if self.success_pile.len() == 0 {
+            print!("Success pile: ___");
+        } else {
+            let top_success = &self.success_pile.last().unwrap();
+            let success_rank = &self.get_rank_string(&top_success.rank);
+            let success_suit = &self.get_suit_string(&top_success.suit);
+            let success_color = &self.get_color_string(&top_success.suit);
 
-        print!("Success pile: ___");
+            print!("Success pile: {success_rank}{success_suit}{success_color}");
+        }
         println!();
     }
 
@@ -192,26 +217,9 @@ impl PyramidSolitaire {
             for card in row {
                 match card {
                     Some(card) => {
-                        let rank = match card.rank {
-                            Rank::Ace => String::from("A"),
-                            Rank::Number(num) => num.to_string(),
-                            Rank::Z => String::from("Z"),
-                            Rank::Jack => String::from("J"),
-                            Rank::Queen => String::from("Q"),
-                            Rank::King => String::from("K"), 
-                        };
-
-                        let suit = match card.suit {
-                            Suit::Clubs => String::from("T"),
-                            Suit::Diamonds => String::from("D"),
-                            Suit::Hearts => String::from("C"),
-                            Suit::Spades => String::from("E"),
-                        };
-
-                        let color = match card.suit {
-                            Suit::Clubs | Suit::Spades => String::from("n"),
-                            Suit::Hearts | Suit::Diamonds => String::from("r"),
-                        };
+                        let rank = self.get_rank_string(&card.rank);
+                        let suit = self.get_suit_string(&card.suit);
+                        let color = self.get_color_string(&card.suit);
 
                         print!("{rank}{suit}{color}  ", rank = rank, suit = suit, color = color);
                     }
