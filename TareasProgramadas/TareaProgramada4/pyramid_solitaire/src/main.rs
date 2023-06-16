@@ -1,3 +1,6 @@
+use std::io::{self, Read};
+use termion::input::TermRead;
+use rand::seq::SliceRandom;
 
 // Enum para el tipo de carta: Clubs(Tréboles), Diamonds(Diamantes), Hearts(Corazones),
 // Spades(Espadas)
@@ -18,6 +21,16 @@ enum Rank {
     Jack,
     Queen,
     King,
+}
+
+// Enum to handle the user input
+#[derive(Debug, Copy, Clone)]
+enum UserInput {
+    Exit,
+    NewGame,
+    NewCard,
+    Column(usize),
+    Undo,
 }
 
 // Struct que representa una carta con su tipo y valor
@@ -94,7 +107,6 @@ impl PyramidSolitaire {
         }
 
         // Barajamos las cartas
-        use rand::seq::SliceRandom;
         let mut rng = rand::thread_rng();
         cards.shuffle(&mut rng);
 
@@ -213,7 +225,6 @@ impl PyramidSolitaire {
             for _ in 0..indent {
                 print!(" ");
             }
-
             for card in row {
                 match card {
                     Some(card) => {
@@ -223,11 +234,9 @@ impl PyramidSolitaire {
 
                         print!("{rank}{suit}{color}  ", rank = rank, suit = suit, color = color);
                     }
-
                     None => print!("                     "),
                 }
             }
-
             indent -= 2;
             println!();
         }
@@ -298,46 +307,27 @@ impl PyramidSolitaire {
     }
 
     /*
-    Función para obtener las coordenadas 
+    Función para obtener la entrada desde el teclado del usuario.
     */
-    /* fn get_user_input(&self) -> (Option()) {
-        use std::io::{self, BufRead};
-
-        println!("Introduzca las coordenadas de las dos cartas a remover (row1 col1 row2 col2), o 'quit' o 'q'  para salir:");
-        println!("> ");
-        
-        let mut input = String::new();
-        io::stdin()
-            .read_line(&mut input)
-            .expect("Failed to read input.");
-        
-        let input = input.trim().to_lowercase();
-
-        if input == "quit" || input == "q" {
-            return (None, None);
-        }
+    fn get_user_input(&self) -> Result<UserInput, String> {
         let stdin = io::stdin();
-        let mut lines = stdin.lock().lines();
+        let mut handle = stdin.lock();
 
-        let input = lines.next().unwrap().unwrap();
-        let mut input_values = input.split_whitespace().map(|s| s.parse::<isize>().unwrap());
+        let mut buffer = [0u8; 1];
+        handle.read_exact(&mut buffer).expect("Failed to read the input");
 
-        let row1 = input_values.next().unwrap();
-        let col1 = input_values.next().unwrap();
-        let row2 = input_values.next().unwrap();
-        let col2 = input_values.next().unwrap();
-
-        if row1 == -1 || col1 == -1 || row2 == -1 || col2 == -1 {
-            (None, None, None, None) // Quit the game
-        } else {
-            (
-                Some(row1 as usize),
-                Some(col1 as usize),
-                Some(row2 as usize),
-                Some(col2 as usize),
-            )
+        match buffer[0] {
+            27 => Ok(UserInput::Exit), // ESC key
+            b'n' | b'N' => Ok(UserInput::NewGame),
+            b'\n' => Ok(UserInput::NewCard), // Enter key
+            b'1'..=b'7' => {
+                let column = (buffer[0] - b'0') as usize;
+                Ok(UserInput::Column(column))
+            }
+            b'u' | b'U' => Ok(UserInput::Undo),
+            _ => Err(String::from("Invalid input")),
         }
-    } */
+    }
 }
 
 
