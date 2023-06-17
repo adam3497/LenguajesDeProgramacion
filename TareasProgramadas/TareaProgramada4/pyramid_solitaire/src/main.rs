@@ -35,6 +35,12 @@ enum UserInput {
     Undo,
 }
 
+// Enum to handle the drawing of a card from the draw pile
+#[derive(Debug, Copy, Clone)]
+enum DrawResult {
+    Drawn,
+}
+
 // Struct que representa una carta con su tipo y valor
 #[derive(Debug, Copy, Clone)]
 struct Card {
@@ -177,7 +183,7 @@ impl PyramidSolitaire {
         if self.draw_pile.len() == 0 {
             print!("Draw pile: ___");
         } else {
-            let draw_first =  &self.draw_pile.first().unwrap();
+            let draw_first =  &self.draw_pile.last().unwrap();
             let draw_rank = self.get_rank_string(&draw_first.rank);
             let draw_suit = self.get_suit_string(&draw_first.suit);
             let draw_color = self.get_color_string(&draw_first.suit);
@@ -277,6 +283,32 @@ impl PyramidSolitaire {
     }
 
     /*
+    Function to draw a new card. It checks whether the draw pile has cards available
+    If so then an Ok result is return, if not an Err result is return.
+    */
+    fn draw_new_card(&mut self) -> Result<DrawResult, String>{
+        if self.draw_pile.len() > 0 {
+            // Take the last element of the draw pile and remove it from the pile
+            let draw_top = self.draw_pile.pop().unwrap();
+            // Save that element from the draw pile to the waste pile 
+            self.waste_pile.push(draw_top);
+            Ok(DrawResult::Drawn)
+        } else {
+            Err(String::from("No more left"))
+        }
+        
+    }
+
+    /*
+    Function to clear the terminal.
+    */
+    fn clear_terminal(&self) {
+        let mut stdout = stdout().into_raw_mode().unwrap();
+        write!(stdout, r#"{}"#, termion::clear::All).unwrap();
+        stdout.flush().unwrap();
+    } 
+
+    /*
     In this function the game logic is hanlde. It asks for the input from the player and depending
     on the context makes the corresponding move or indicates to the user that there's no move.
     It also calls to the corresponding function to verify whether a pair is a valid pair 
@@ -285,12 +317,13 @@ impl PyramidSolitaire {
     fn play(&mut self) {
         // Initialize the piles and pyramid
         self.initialize();
+        self.clear_terminal();
         self.print_piles();
         self.print_pyramid();
 
         // Main loop to control the game until the user exits the game
         // If the user wins, then they can decide whether they want to continue with a new game
-        // or simply exit the game
+        // or simply exit the game.
         loop {
             let user_input = self.get_user_input();
             match user_input {
@@ -301,7 +334,22 @@ impl PyramidSolitaire {
                             break;
                         }
                         UserInput::NewGame => println!("Creating a new game!"),
-                        UserInput::NewCard => println!("Drawing a new card..."),
+                        UserInput::NewCard => {
+                            // To drawn a new card, the function to do so is called and if the
+                            // operation was successful then a Ok(DrawResult::Drawn) is receive
+                            println!("Drawing a new card...");
+                            match self.draw_new_card() {
+                                Ok(DrawResult::Drawn) => {
+                                    println!("Card drawn!");
+                                    // print the piles and pyramid again
+                                    // and clearing the terminal
+                                    self.clear_terminal();
+                                    self.print_piles();
+                                    self.print_pyramid();
+                                }
+                                Err(msg) => println!("Error: {msg}"),
+                            }
+                        },
                         UserInput::Column(column) => println!("Selected column: {}", column),
                         UserInput::Undo => println!("Undoing move..."),
                     }
