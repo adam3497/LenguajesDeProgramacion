@@ -1,5 +1,7 @@
-use std::io::{self, Read};
+use std::io::{self, Read, stdin, Write, stdout};
 use termion::input::TermRead;
+use termion::event::Key;
+use termion::raw::IntoRawMode;
 use rand::seq::SliceRandom;
 
 // Enum para el tipo de carta: Clubs(Tréboles), Diamonds(Diamantes), Hearts(Corazones),
@@ -274,11 +276,42 @@ impl PyramidSolitaire {
         self.pyramid[row2][col2] = None;
     }
 
+    /*
+    In this function the game logic is hanlde. It asks for the input from the player and depending
+    on the context makes the corresponding move or indicates to the user that there's no move.
+    It also calls to the corresponding function to verify whether a pair is a valid pair 
+    (both sum up to 13) or the not.   
+    */
     fn play(&mut self) {
+        // Initialize the piles and pyramid
         self.initialize();
         self.print_piles();
         self.print_pyramid();
 
+        // Main loop to control the game until the user exits the game
+        // If the user wins, then they can decide whether they want to continue with a new game
+        // or simply exit the game
+        loop {
+            let user_input = self.get_user_input();
+            match user_input {
+                Ok(input) => {
+                    match input {
+                        UserInput::Exit => {
+                            println!("Thanks for playing, game ended!");
+                            break;
+                        }
+                        UserInput::NewGame => println!("Creating a new game!"),
+                        UserInput::NewCard => println!("Drawing a new card..."),
+                        UserInput::Column(column) => println!("Selected column: {}", column),
+                        UserInput::Undo => println!("Undoing move..."),
+                    }
+                }
+                Err(error) => {
+                    println!("Error: {}", error);
+                    println!("Try again!");
+                }
+            }
+        }
         // Loop que permite jugar hasta que no se puedan hacer movimientos o el judador gane
         /* loop {
             let (row1, col1, row2, col2) = self.get_user_input();
@@ -310,23 +343,36 @@ impl PyramidSolitaire {
     Función para obtener la entrada desde el teclado del usuario.
     */
     fn get_user_input(&self) -> Result<UserInput, String> {
-        let stdin = io::stdin();
-        let mut handle = stdin.lock();
+        println!("What would you like to do?");
+        println!("Options: \n> ESC key -> Exit game.\n> n/N -> New game.\n> <column #> (1, 2, 3, 4, 5, 6, 7) -> Select a column.\n> u/U -> Undo move.");
 
-        let mut buffer = [0u8; 1];
-        handle.read_exact(&mut buffer).expect("Failed to read the input");
+        let stdin = stdin();
+        // setting up stdout and going into raw mode
+        let mut stdout = stdout().into_raw_mode().unwrap();
+        // printing the indicator message for input 
+        write!(stdout, r#"> "#).unwrap();
+        stdout.flush().unwrap();
 
-        match buffer[0] {
-            27 => Ok(UserInput::Exit), // ESC key
-            b'n' | b'N' => Ok(UserInput::NewGame),
-            b'\n' => Ok(UserInput::NewCard), // Enter key
-            b'1'..=b'7' => {
-                let column = (buffer[0] - b'0') as usize;
-                Ok(UserInput::Column(column))
+        // detecting keydown events
+        for c in stdin.keys() {
+            // Match the key event
+            match c.unwrap() {
+                Key::Esc => return Ok(UserInput::Exit),
+                Key::Char('n') | Key::Char('N') => return Ok(UserInput::NewGame),
+                Key::Char('\n') => return Ok(UserInput::NewCard),
+                Key::Char('1') => return Ok(UserInput::Column(1)), 
+                Key::Char('2') => return Ok(UserInput::Column(2)), 
+                Key::Char('3') => return Ok(UserInput::Column(3)), 
+                Key::Char('4') => return Ok(UserInput::Column(4)), 
+                Key::Char('5') => return Ok(UserInput::Column(5)), 
+                Key::Char('6') => return Ok(UserInput::Column(6)), 
+                Key::Char('7') => return Ok(UserInput::Column(7)),
+                Key::Char('u') | Key::Char('U') => return Ok(UserInput::Undo),
+                _ => return Err(String::from("Invalid input")),
             }
-            b'u' | b'U' => Ok(UserInput::Undo),
-            _ => Err(String::from("Invalid input")),
         }
+
+        Err(String::from("Couldn't detect any key"))
     }
 }
 
