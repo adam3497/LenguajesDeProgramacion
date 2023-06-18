@@ -300,66 +300,12 @@ impl PyramidSolitaire {
     }
 
     /*
-    Function to clear the terminal.
-    */
-    fn clear_terminal(&self) {
-        let mut stdout = stdout().into_raw_mode().unwrap();
-        write!(stdout, r#"{}"#, termion::clear::All).unwrap();
-        stdout.flush().unwrap();
-    } 
-
-    /*
     In this function the game logic is hanlde. It asks for the input from the player and depending
     on the context makes the corresponding move or indicates to the user that there's no move.
     It also calls to the corresponding function to verify whether a pair is a valid pair 
     (both sum up to 13) or the not.   
     */
-    fn play(&mut self) {
-        // Initialize the piles and pyramid
-        self.initialize();
-        self.clear_terminal();
-        self.print_piles();
-        self.print_pyramid();
-
-        // Main loop to control the game until the user exits the game
-        // If the user wins, then they can decide whether they want to continue with a new game
-        // or simply exit the game.
-        loop {
-            let user_input = self.get_user_input();
-            match user_input {
-                Ok(input) => {
-                    match input {
-                        UserInput::Exit => {
-                            println!("Thanks for playing, game ended!");
-                            break;
-                        }
-                        UserInput::NewGame => println!("Creating a new game!"),
-                        UserInput::NewCard => {
-                            // To drawn a new card, the function to do so is called and if the
-                            // operation was successful then a Ok(DrawResult::Drawn) is receive
-                            println!("Drawing a new card...");
-                            match self.draw_new_card() {
-                                Ok(DrawResult::Drawn) => {
-                                    println!("Card drawn!");
-                                    // print the piles and pyramid again
-                                    // and clearing the terminal
-                                    self.clear_terminal();
-                                    self.print_piles();
-                                    self.print_pyramid();
-                                }
-                                Err(msg) => println!("Error: {msg}"),
-                            }
-                        },
-                        UserInput::Column(column) => println!("Selected column: {}", column),
-                        UserInput::Undo => println!("Undoing move..."),
-                    }
-                }
-                Err(error) => {
-                    println!("Error: {}", error);
-                    println!("Try again!");
-                }
-            }
-        }
+    /* fn play(&mut self) {
         // Loop que permite jugar hasta que no se puedan hacer movimientos o el judador gane
         /* loop {
             let (row1, col1, row2, col2) = self.get_user_input();
@@ -385,48 +331,118 @@ impl PyramidSolitaire {
 
 
         } */
+    } */
+}
+
+/*
+Función para obtener la entrada desde el teclado del usuario.
+*/
+fn get_user_input() -> Result<UserInput, String> {
+    println!("What would you like to do?");
+    println!("Options: \n> ESC key -> Exit game.\n> n/N -> New game.\n> <column #> (1, 2, 3, 4, 5, 6, 7) -> Select a column.\n> u/U -> Undo move.");
+
+    let stdin = stdin();
+    // setting up stdout and going into raw mode
+    let mut stdout = stdout().into_raw_mode().unwrap();
+    // printing the indicator message for input 
+    write!(stdout, r#"> "#).unwrap();
+    stdout.flush().unwrap();
+
+    // detecting keydown events
+    for c in stdin.keys() {
+        // Match the key event
+        match c.unwrap() {
+            Key::Esc => return Ok(UserInput::Exit),
+            Key::Char('n') | Key::Char('N') => return Ok(UserInput::NewGame),
+            Key::Char('\n') => return Ok(UserInput::NewCard),
+            Key::Char('1') => return Ok(UserInput::Column(1)), 
+            Key::Char('2') => return Ok(UserInput::Column(2)), 
+            Key::Char('3') => return Ok(UserInput::Column(3)), 
+            Key::Char('4') => return Ok(UserInput::Column(4)), 
+            Key::Char('5') => return Ok(UserInput::Column(5)), 
+            Key::Char('6') => return Ok(UserInput::Column(6)), 
+            Key::Char('7') => return Ok(UserInput::Column(7)),
+            Key::Char('u') | Key::Char('U') => return Ok(UserInput::Undo),
+            _ => return Err(String::from("Invalid input")),
+        }
     }
 
-    /*
-    Función para obtener la entrada desde el teclado del usuario.
-    */
-    fn get_user_input(&self) -> Result<UserInput, String> {
-        println!("What would you like to do?");
-        println!("Options: \n> ESC key -> Exit game.\n> n/N -> New game.\n> <column #> (1, 2, 3, 4, 5, 6, 7) -> Select a column.\n> u/U -> Undo move.");
+    Err(String::from("Couldn't detect any key"))
+}
 
-        let stdin = stdin();
-        // setting up stdout and going into raw mode
-        let mut stdout = stdout().into_raw_mode().unwrap();
-        // printing the indicator message for input 
-        write!(stdout, r#"> "#).unwrap();
-        stdout.flush().unwrap();
+/* Function to clear the terminal. */
+fn clear_terminal() {
+    let mut stdout = stdout().into_raw_mode().unwrap();
+    write!(stdout, r#"{}"#, termion::clear::All).unwrap();
+    stdout.flush().unwrap();
+} 
 
-        // detecting keydown events
-        for c in stdin.keys() {
-            // Match the key event
-            match c.unwrap() {
-                Key::Esc => return Ok(UserInput::Exit),
-                Key::Char('n') | Key::Char('N') => return Ok(UserInput::NewGame),
-                Key::Char('\n') => return Ok(UserInput::NewCard),
-                Key::Char('1') => return Ok(UserInput::Column(1)), 
-                Key::Char('2') => return Ok(UserInput::Column(2)), 
-                Key::Char('3') => return Ok(UserInput::Column(3)), 
-                Key::Char('4') => return Ok(UserInput::Column(4)), 
-                Key::Char('5') => return Ok(UserInput::Column(5)), 
-                Key::Char('6') => return Ok(UserInput::Column(6)), 
-                Key::Char('7') => return Ok(UserInput::Column(7)),
-                Key::Char('u') | Key::Char('U') => return Ok(UserInput::Undo),
-                _ => return Err(String::from("Invalid input")),
+/* This function creates a new instance of a pyramid solitaire game. It calls the methods to
+initialize all the corresponding vectors, clear the terminal and print the piles and pyramid */
+fn new_game() -> PyramidSolitaire {
+    // create and shuffle the deck
+    let mut game = PyramidSolitaire::new();
+    game.initialize();
+    clear_terminal();
+    game.print_piles();
+    game.print_pyramid();
+    //TODO: separate the functionality to shuffle and create the pyramid inside initialize() function
+    game
+}
+
+/* In this function the game logic is hanlde. It asks for the input from the player and depending
+on the context makes the corresponding move or indicates to the user that there's no move. It also 
+calls to the corresponding function to verify whether a pair is a valid pair (both sum up to 13) or 
+the not. */
+fn play() {
+    // create a new instance of a game
+    let mut game_state = new_game();
+
+    // Main loop to control the game until the user exits the game
+    // If the user wins, then they can decide whether they want to continue with a new game
+    // or simply exit the game.
+    loop {
+        let user_input = get_user_input();
+        match user_input {
+            Ok(input) => {
+                match input {
+                    UserInput::Exit => {
+                        println!("Thanks for playing, game ended!");
+                        break;
+                    }
+                    UserInput::NewGame => {
+                        println!("Creating a new game!");
+                        // create a new instance of a game
+                        game_state = new_game();
+                    },
+                    UserInput::NewCard => {
+                        // To drawn a new card, the function to do so is called and if the
+                        // operation was successful then a Ok(DrawResult::Drawn) is receive
+                        println!("Drawing a new card...");
+                        match game_state.draw_new_card() {
+                            Ok(DrawResult::Drawn) => {
+                                println!("Card drawn!");
+                                // print the piles and pyramid again
+                                // and clearing the terminal
+                                clear_terminal();
+                                game_state.print_piles();
+                                game_state.print_pyramid();
+                            }
+                            Err(msg) => println!("Error: {msg}"),
+                        }
+                    },
+                    UserInput::Column(column) => println!("Selected column: {}", column),
+                    UserInput::Undo => println!("Undoing move..."),
+                }
+            }
+            Err(error) => {
+                println!("Error: {}", error);
+                println!("Try again!");
             }
         }
-
-        Err(String::from("Couldn't detect any key"))
     }
 }
 
-
-
 fn main() {
-    let mut game = PyramidSolitaire::new();
-    game.play();
+    play();
 }
