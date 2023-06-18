@@ -6,7 +6,7 @@ use rand::seq::SliceRandom;
 
 // Enum para el tipo de carta: Clubs(Tréboles), Diamonds(Diamantes), Hearts(Corazones),
 // Spades(Espadas)
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum Suit {
     Clubs,
     Diamonds,
@@ -15,7 +15,7 @@ enum Suit {
 }
 
 // Enum para el valor de la carta: Ace(1), 2 - 9, Z(10), Jack(11), Queen(12), King(13)
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum Rank {
     Ace,
     Number(u8),
@@ -41,8 +41,13 @@ enum DrawResult {
     Drawn,
 }
 
+#[derive(Debug, Clone)]
+enum MoveResult {
+    ValidMove(String),
+}
+
 // Struct que representa una carta con su tipo y valor
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 struct Card {
     suit: Suit,
     rank: Rank,
@@ -242,7 +247,7 @@ impl PyramidSolitaire {
 
                         print!("{rank}{suit}{color}  ", rank = rank, suit = suit, color = color);
                     }
-                    None => print!("                     "),
+                    None => print!("     "),
                 }
             }
             indent -= 2;
@@ -252,9 +257,9 @@ impl PyramidSolitaire {
     }
 
     /*
-    Función que verifica si las dos cartas a las que se trata de hacer par suman 13.
+    Función que verifica si las dos cartas seleccionadas suman 13.
     */
-    fn is_pair(&self, card1: Card, card2: Card) -> bool {
+    fn is_pair(&self, card1: &Card, card2: &Card) -> bool {
         let rank_rum = match card1.rank {
             Rank::Ace => 1,
             Rank::Number(num) => num as u8,
@@ -282,6 +287,11 @@ impl PyramidSolitaire {
         self.pyramid[row2][col2] = None;
     }
 
+    /* */
+    fn remove_card_pyramid(&mut self, row: usize, col: usize) {
+        self.pyramid[row][col] = None;
+    }
+
     /*
     Function to draw a new card. It checks whether the draw pile has cards available
     If so then an Ok result is return, if not an Err result is return.
@@ -299,39 +309,140 @@ impl PyramidSolitaire {
         
     }
 
-    /*
-    In this function the game logic is hanlde. It asks for the input from the player and depending
-    on the context makes the corresponding move or indicates to the user that there's no move.
-    It also calls to the corresponding function to verify whether a pair is a valid pair 
-    (both sum up to 13) or the not.   
-    */
-    /* fn play(&mut self) {
-        // Loop que permite jugar hasta que no se puedan hacer movimientos o el judador gane
-        /* loop {
-            let (row1, col1, row2, col2) = self.get_user_input();
-            if row1.is_none() || col1.is_none() || row2.is_none() || col2.is_none() {
-                println!("Game ended. Goodbye!");
-                break;
+    /* This function verifies if a card inside the pyramid is available to play with. This means, that
+    there are no other cards 'on top' of it or covering it. To do so, we gotta check that the position
+    in the next row and position + 1 in the next row are free, that means, there are no cards on those
+    positions. This only works for rows from 0 to 5. Row 6 is the last row in the pyramid and is always
+    available */
+    fn is_valid_card(&self, row: &usize, column: &usize) -> bool {
+        // The card is in the last row (always available)
+        if *row == 6 {
+            return true;
+        }
+
+        // The card is not in the last row, so we need to check its neighbors 
+        //(pos and pos+1 in the next row)
+        if self.pyramid[row+1][*column] == None && self.pyramid[row+1][column+1] == None {
+            return true;
+        }
+        // The cards is not available to play 
+        false 
+    }
+
+    /* */
+    fn get_card_from_pyramid(&self, column: &usize) -> Option<(usize, usize)> {
+        // Iterate through the pyramid checking every row in the specified column
+        // If the pyramid[i][column] is a valid card to play, then its position Some((i, column))
+        // is returned. If we reach the end and nothing was found a None is returned.
+        for i in (0..=self.pyramid.len()-1).rev() {
+            dbg!("{}", self.pyramid[i].len());
+            dbg!("{:?}", &self.pyramid[i]);
+            if *column < self.pyramid[i].len() {
+                if self.pyramid[i][*column] != None && self.is_valid_card(&i, column) {
+                    return Some((i, *column));
+                }
             }
+        }
+        None
+    }
 
-            let row1 = row1.unwrap();
-            let col1 = col1.unwrap();
-            let row2 = row2.unwrap();
-            let col2 = col2.unwrap();
-
-            let card1 = self.pyramid[row1][col1].unwrap();
-            let card2 = self.pyramid[row2][col2].unwrap();
-
-            if self.is_pair(card1, card2) {
-                self.remove_pair(row1, col1, row2, col2);
-                self.print_pyramid();
-            } else {
-                println!("No es una pareja válida, trata de nuevo!");
+    /* */
+    fn pair_against_pyramid(&self, row1: &usize, col1: &usize) -> Option<(usize, usize)> {
+        // Iterate through all the rows of the pyramid in reverse (starting in the last row)
+        for row2 in (0..=self.pyramid.len()-1).rev() {
+            // Iterate through all the columns of the current row i
+            for col2 in 0..=self.pyramid[row2].len()-1 {
+                // Skip the card we selected
+                if *row1 == row2 && *col1 == col2 {
+                    continue;
+                }
+                // Verify if the current card is available
+                if self.pyramid[row2][col2] != None && self.is_valid_card(&row2, &col2) {
+                    let card1 = &self.pyramid[*row1][*col1].unwrap();
+                    let card2 = &self.pyramid[row2][col2].unwrap();
+                    // Verify if both cards are a valid pair
+                    if self.is_pair(card1, card2) {
+                        // The current card2 is a valid match for the card1
+                        return Some((row2, col2));
+                    }
+                }
             }
+        }
+        // There are no valid matches
+        None
+    }
 
+    /* */
+    fn make_a_move(&mut self, column: &usize) -> Result<MoveResult, String>{
+        // Get the card from the pyramid, if there's a valid card on the specified column, then we
+        // proceed to try to make a move, if not then we return a no move action 
+        match self.get_card_from_pyramid(column) {
+            // We retrieve the card from the pyramid, only if it's a valid card to play
+            Some((row1, col1)) => {
+                // if a valid card is found inside the pyramid, then we proceed to verify for a move
+                // First we check if there's a valid pair inside the pyramid with the card selected
+                match self.pair_against_pyramid(&row1, &col1) {
+                    // If there's a valid pair, the card's coordinates are returned
+                    Some((row2, col2)) => {
+                        let card1 = self.pyramid[row1][col1].unwrap().clone();
+                        let card2 = self.pyramid[row2][col2].unwrap().clone();
+                        // push the cards into the success pile
+                        self.success_pile.push(card1);
+                        self.success_pile.push(card2);
+                        // remove both cards from the pyramid
+                        self.remove_pair(row1, col1, row2, col2);
+                        
+                        return Ok(MoveResult::ValidMove(String::from("Pair in pyramid")));
+                    }
+                    // There was no move within the pyramid
+                    None => {
+                        // reference to the selected card
+                        let selected_card = &self.pyramid[row1][col1].unwrap();
+                        
+                        // Proceed to compare the selected card against the top card of the 
+                        // draw pile
+                        if self.draw_pile.len() > 0 {
+                            let top_draw_pile = self.draw_pile.last().unwrap();
+                            if self.is_pair(selected_card, top_draw_pile) {
+                                // If they are a valid pair then
+                                // Push the card to the success pile
+                                self.success_pile.push(selected_card.clone());
+                                self.success_pile.push(self.draw_pile.pop().unwrap());
+                                // remove the card from the pyramid
+                                self.remove_card_pyramid(row1, col1);
+                                
+                                return Ok(MoveResult::ValidMove(String::from("Pair with draw pile")));
+                            }
+                        }
+                        // And if there's no pair against the draw pile, then we compare against the
+                        // waste pile
+                        if self.waste_pile.len() > 0 {
+                            let top_waste_pile = self.waste_pile.last().unwrap();
+                            if self.is_pair(selected_card, top_waste_pile) {
+                                // if they are a valid pair then, push the cards to the success pile
+                                self.success_pile.push(selected_card.clone());
+                                self.success_pile.push(self.waste_pile.pop().unwrap());
 
-        } */
-    } */
+                                // remove the selected card from the pyramid
+                                self.remove_card_pyramid(row1, col1);
+                                
+                                return Ok(MoveResult::ValidMove(String::from("Pair with waste pile")));
+                            }
+                        }
+                        
+                        // There are no valid moves for the selected card
+                        return Err(String::from("No valid move"));
+
+                    }
+                }
+            }
+            None => {
+                // Could not find a valid card to select from the pyramid
+                return Err(String::from("No valid card"));
+            }
+        }
+    }
+
 }
 
 /*
@@ -390,7 +501,7 @@ fn new_game() -> PyramidSolitaire {
     game
 }
 
-/* In this function the game logic is hanlde. It asks for the input from the player and depending
+/* In this function the game logic is handle. It asks for the input from the player and depending
 on the context makes the corresponding move or indicates to the user that there's no move. It also 
 calls to the corresponding function to verify whether a pair is a valid pair (both sum up to 13) or 
 the not. */
@@ -414,10 +525,10 @@ fn play() {
                         println!("Creating a new game!");
                         // create a new instance of a game
                         game_state = new_game();
-                    },
+                    }
                     UserInput::NewCard => {
                         // To drawn a new card, the function to do so is called and if the
-                        // operation was successful then a Ok(DrawResult::Drawn) is receive
+                        // operation was successful then an Ok(DrawResult::Drawn) is received
                         println!("Drawing a new card...");
                         match game_state.draw_new_card() {
                             Ok(DrawResult::Drawn) => {
@@ -430,8 +541,28 @@ fn play() {
                             }
                             Err(msg) => println!("Error: {msg}"),
                         }
-                    },
-                    UserInput::Column(column) => println!("Selected column: {}", column),
+                    }
+                    UserInput::Column(column) => {
+                        println!("Selected column: {}", column);
+                        // Update the column value to work from 0 to 6
+                        let column = column-1;
+                        match game_state.make_a_move(&column) {
+                            Ok(MoveResult::ValidMove(msg)) => {
+                                // There was a valid move, so we proceed to update the game 
+                                clear_terminal();
+                                println!("{}", msg);
+                                game_state.print_piles();
+                                game_state.print_pyramid();
+                            }
+                            Err(msg) => {
+                                // There was no valid move, but we update the game anyways
+                                clear_terminal();
+                                println!("{}", msg);
+                                game_state.print_piles();
+                                game_state.print_pyramid();
+                            }
+                        }
+                    }
                     UserInput::Undo => println!("Undoing move..."),
                 }
             }
