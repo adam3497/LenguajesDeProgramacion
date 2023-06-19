@@ -1,8 +1,10 @@
-use std::io::{self, Read, stdin, Write, stdout};
+use std::io::{stdin, Write, stdout};
+use std::fs::{OpenOptions, File};
 use termion::input::TermRead;
 use termion::event::Key;
 use termion::raw::IntoRawMode;
 use rand::seq::SliceRandom;
+use chrono::{Local, DateTime, Datelike, Timelike};
 
 // Enum para el tipo de carta: Clubs(Tréboles), Diamonds(Diamantes), Hearts(Corazones),
 // Spades(Espadas)
@@ -478,6 +480,101 @@ impl PyramidSolitaire {
         true
     }
 
+    /* */
+    fn get_card_representation(&self, card: &Card) -> String {
+        let rank = self.get_rank_string(&card.rank);
+        let suit = self.get_suit_string(&card.suit);
+        let color = self.get_color_string(&card.suit);
+        return format!("{rank}{suit}{color}")
+    }
+
+    /* This function writes into the log file all the game state (pyramid and piles) */
+    fn write_game_state(&self, file: &mut File) {
+        if self.draw_pile.len() > 0 {
+            let draw_top = self.draw_pile.last().unwrap();
+            let draw_rep = self.get_card_representation(draw_top);
+            write!(file, "Draw pile: {} | ", draw_rep).unwrap();
+        } else {
+            write!(file, "Draw pile: ___ | ").unwrap();
+        }
+
+        if self.waste_pile.len() > 0 {
+            let waste_top = self.waste_pile.last().unwrap();
+            let waste_rep = self.get_card_representation(waste_top);
+            write!(file, "Waste pile: {} | ", waste_rep).unwrap();
+        } else {
+            write!(file, "Waste pile: ___ | ").unwrap();
+        }
+
+        if self.success_pile.len() > 0 {
+            let success_top = self.success_pile.last().unwrap();
+            let success_rep = self.get_card_representation(success_top);
+            write!(file, "Success pile: {}", success_rep).unwrap();
+        } else {
+            write!(file, "Success pile: ___ | ").unwrap();
+        }
+
+        writeln!(file).unwrap();
+        writeln!(file, "Pyramid state").unwrap();
+
+        for i in 0..=self.pyramid.len()-1 {
+            for j in 0..=self.pyramid[i].len()-1 {
+                if self.pyramid[i][j] == None {
+                    write!(file, " ___ ").unwrap();
+                    continue;
+                }
+                let current_card = &self.pyramid[i][j].unwrap();
+                let card_rep = self.get_card_representation(current_card);
+                write!(file, " {} ", card_rep).unwrap();
+            }
+            writeln!(file).unwrap();
+        }
+        
+    }
+
+
+    /* */
+    fn write_log_entry(&self, file: &mut File) {
+        let now: DateTime<Local> = Local::now();
+        let formatted_date = now.format("%d-%b-%Y").to_string();
+        let formatted_time = now.format("%l:%M %P").to_string();
+        writeln!(file, "[ log entry ] [ {} {} ]", formatted_date, formatted_time).unwrap();
+    }
+
+    /* */
+    fn write_separator(&self, file: &mut File) {
+        write!(file, "{}", std::iter::repeat("-").take(60).collect::<String>()).unwrap();
+        writeln!(file).unwrap();
+    }
+
+    /* This function writes to the log file when a player creates a new game.
+    It also saves the state of that new game */
+    fn save_to_log_new_game(&self) -> std::io::Result<()>{
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("game_log.txt")?;
+        self.write_log_entry(&mut file);
+        writeln!(file, "Player creates a new game.").unwrap();
+        writeln!(file, "New game has the following state: ").unwrap();
+        self.write_game_state(&mut file);
+        self.write_separator(&mut file);
+        Ok(())
+    }
+
+    /* This function saves to a log when a player exists the game */
+    fn save_to_log_exit(&self) -> std::io::Result<()>{
+        let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("game_log.txt")?;
+        self.write_log_entry(&mut file);
+        writeln!(file, "Player exists the game.").unwrap();
+        self.write_game_state(&mut file);
+        self.write_separator(&mut file);
+        Ok(())
+    }
+
 }
 
 /*
@@ -553,6 +650,7 @@ fn play() {
             Ok(input) => {
                 match input {
                     UserInput::Exit => {
+                        game_state.save_to_log_exit().unwrap();
                         println!("Thanks for playing, game ended!");
                         break;
                     }
@@ -560,6 +658,7 @@ fn play() {
                         println!("Creating a new game!");
                         // create a new instance of a game
                         game_state = new_game();
+                        game_state.save_to_log_new_game().unwrap();
                     }
                     UserInput::NewCard => {
                         // To drawn a new card, the function to do so is called and if the
@@ -611,8 +710,12 @@ fn play() {
                 }
             }
             Err(error) => {
-                println!("Error: {}", error);
-                println!("Try again!");
+                clear_terminal();
+                println!("{}", error);
+                println!("Try again! ;)");
+                game_state.print_piles();
+                game_state.print_pyramid();
+                
             }
         }
     }
