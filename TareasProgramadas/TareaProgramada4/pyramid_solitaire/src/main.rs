@@ -4,7 +4,7 @@ use termion::input::TermRead;
 use termion::event::Key;
 use termion::raw::IntoRawMode;
 use rand::seq::SliceRandom;
-use chrono::{Local, DateTime, Datelike, Timelike};
+use chrono::{Local, DateTime};
 
 // Enum para el tipo de carta: Clubs(Tréboles), Diamonds(Diamantes), Hearts(Corazones),
 // Spades(Espadas)
@@ -533,7 +533,7 @@ impl PyramidSolitaire {
     }
 
 
-    /* */
+    /* Function to write the current date and time into the log file */
     fn write_log_entry(&self, file: &mut File) {
         let now: DateTime<Local> = Local::now();
         let formatted_date = now.format("%d-%b-%Y").to_string();
@@ -573,6 +573,11 @@ impl PyramidSolitaire {
         self.write_game_state(&mut file);
         self.write_separator(&mut file);
         Ok(())
+    }
+
+    /* */
+    fn save_to_log_draw(&self) {
+        
     }
 
 }
