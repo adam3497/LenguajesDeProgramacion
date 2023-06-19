@@ -36,9 +36,9 @@ enum UserInput {
 }
 
 // Enum to handle the drawing of a card from the draw pile
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 enum DrawResult {
-    Drawn,
+    Drawn(String),
 }
 
 #[derive(Debug, Clone)]
@@ -102,7 +102,7 @@ impl PyramidSolitaire {
             Rank::Number(6),
             Rank::Number(7),
             Rank::Number(8),
-            Rank::Number(8),
+            Rank::Number(9),
             Rank::Z,
             Rank::Jack,
             Rank::Queen,
@@ -247,7 +247,7 @@ impl PyramidSolitaire {
 
                         print!("{rank}{suit}{color}  ", rank = rank, suit = suit, color = color);
                     }
-                    None => print!("     "),
+                    None => print!("___  "),
                 }
             }
             indent -= 2;
@@ -300,11 +300,25 @@ impl PyramidSolitaire {
         if self.draw_pile.len() > 0 {
             // Take the last element of the draw pile and remove it from the pile
             let draw_top = self.draw_pile.pop().unwrap();
-            // Save that element from the draw pile to the waste pile 
+            // Check if the card is a King, if so, move it to the success pile
+            if draw_top.rank == Rank::King {
+                self.success_pile.push(draw_top);
+                return Ok(DrawResult::Drawn(String::from("Card was a King")));
+            }
+            // If the card is not a King, push the card into the waste pile 
             self.waste_pile.push(draw_top);
-            Ok(DrawResult::Drawn)
+            return Ok(DrawResult::Drawn(String::from("New card drawn")));
+            
         } else {
-            Err(String::from("No more left"))
+            // If there are no more cards, we put the cards in the waste pile back into the draw pile
+            if self.waste_pile.len() > 0 {
+                while self.waste_pile.len() > 0 {
+                    self.draw_pile.push(self.waste_pile.pop().unwrap());
+                }
+                return Ok(DrawResult::Drawn(String::from("Waste pile was put back into draw pile")));
+            } else {
+                return Err(String::from("No more cards left to draw"));
+            }
         }
         
     }
@@ -379,6 +393,14 @@ impl PyramidSolitaire {
         match self.get_card_from_pyramid(column) {
             // We retrieve the card from the pyramid, only if it's a valid card to play
             Some((row1, col1)) => {
+                // Check if the card is a king, if so, we move it to the success pile
+                if self.pyramid[row1][col1].unwrap().rank == Rank::King {
+                    let card = self.pyramid[row1][col1].unwrap().clone();
+                    self.success_pile.push(card);
+                    self.remove_card_pyramid(row1, col1);
+                    return Ok(MoveResult::ValidMove(String::from("Card was a king")));
+                }
+
                 // if a valid card is found inside the pyramid, then we proceed to verify for a move
                 // First we check if there's a valid pair inside the pyramid with the card selected
                 match self.pair_against_pyramid(&row1, &col1) {
@@ -441,6 +463,19 @@ impl PyramidSolitaire {
                 return Err(String::from("No valid card"));
             }
         }
+    }
+
+    /* This function verifies if there are no more cards in the pyramid, if so, the player
+    wins and a true is returned, if there are still cards then a false is returned */
+    fn check_for_win(&self) -> bool {
+        for i in (0..=self.pyramid.len()-1).rev() {
+            for j in 0..=self.pyramid[i].len()-1 {
+                if self.pyramid[i][j] != None {
+                    return false;
+                }
+            }
+        }
+        true
     }
 
 }
@@ -531,15 +566,20 @@ fn play() {
                         // operation was successful then an Ok(DrawResult::Drawn) is received
                         println!("Drawing a new card...");
                         match game_state.draw_new_card() {
-                            Ok(DrawResult::Drawn) => {
-                                println!("Card drawn!");
+                            Ok(DrawResult::Drawn(msg)) => {
                                 // print the piles and pyramid again
                                 // and clearing the terminal
                                 clear_terminal();
+                                println!("{}", msg);
                                 game_state.print_piles();
                                 game_state.print_pyramid();
                             }
-                            Err(msg) => println!("Error: {msg}"),
+                            Err(msg) => {
+                                clear_terminal();
+                                println!("{msg}");
+                                game_state.print_piles();
+                                game_state.print_pyramid();
+                            }
                         }
                     }
                     UserInput::Column(column) => {
@@ -550,6 +590,10 @@ fn play() {
                             Ok(MoveResult::ValidMove(msg)) => {
                                 // There was a valid move, so we proceed to update the game 
                                 clear_terminal();
+                                // Check if the player won
+                                if game_state.check_for_win() {
+                                    println!("You win! :D");
+                                }
                                 println!("{}", msg);
                                 game_state.print_piles();
                                 game_state.print_pyramid();
