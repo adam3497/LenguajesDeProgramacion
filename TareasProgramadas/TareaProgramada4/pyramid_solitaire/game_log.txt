@@ -1,0 +1,12 @@
+[ log entry ] [ 18-Jun-2023  9:50 pm ]
+Player exists the game.
+Draw pile: ___ | Waste pile: ADr | Success pile: 2Tn
+Pyramid state
+ 7Cr 
+ 5Tn  5En 
+ ZCr  ATn  JTn 
+ ___  8Dr  ___  4Tn 
+ ___  ___  ___  ___  3En 
+ ___  ___  ___  ___  ___  ___ 
+ ___  ___  ___  ___  ___  ___  ___ 
+------------------------------------------------------------

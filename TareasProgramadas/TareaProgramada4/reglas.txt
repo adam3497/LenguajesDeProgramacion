@@ -1,0 +1,98 @@
+[c, n, n, n, n, n, n]                       c
+[c, c, n, n, n, n, n]                     c   c
+[c, c, c, n, n, n, n]                   c   c   c
+[c, c, c, c, n, n, n]                 c   c   c   c
+[c, c, c, c, c, n, n]               c   c   c   c   c
+[c, c, c, c, c, c, n]             c   c   c   c   c   c
+[n, c, c, c, c, c, c]           n   c   c   c   c   c   c
+
+
+# Reglas para verificar validez
+
+1) Si la carta está en la última fila (fila 7 - pos 6) no se verifica si hay cartas sobre ella
+
+2) Si el total de cartas disponibles en la fila 7 (pos 6) es 7, no se puede accesar a las filas anteriores
+
+3) Para verificar si las cartas están disponibles para jugar (no son tapadas por otras) se usa la
+   fórmula: 
+                if next_row[i] == n and next_row[i+1] == n:
+                    card_is_available
+    
+    Esto sólo funciona para las filas 1-6 (0-5 posiciones array)
+
+# Reglas para convertir la columna seleccionada a un movimiento
+
+1) El usuario selecciona una columna del 1 al 7 (esto representa la posición de la carta en una fila)
+
+2) Para saber cuál es la carta a seleccionar (fila, columna) se verifica siguiendo este patrón:
+
+    2.1) Se comienza por la última fila (tamaño array - 1), si no hay carta en esa posición (columna),
+         se continua con la fila anterior 
+    
+    2.2) La verificación es dada de la siguiente manera:
+
+            if current_row[i] != n:
+                return current_row[i]
+
+    2.3) Se repite hasta que se encuentra una carta en la posición indicada
+
+
+3) Una vez se encuentra la carta, se procede a verificar si es una carta disponible (no está siendo 
+   tapada por otra(s)). De no estar disponible, simplemente se le indica al jugador que no hay
+   movimiento disponible en la columna seleccionada.
+
+4) Si la carta está disponible, se procede a comparar la carta con las demás cartas en juego de la 
+   siguiente manera:
+
+   4.1) Se verifica primero contra las cartas en la pirámide, para esto se debe guardar la posición 
+        de la carta que se seleccionó para no hacerle match a ella misma.
+
+   4.2) Se comienza con la última fila de la pirámide:
+
+        for card in current_row:
+            if card is not selected_card and is_valid(card):
+                is_pair(card, selected_card)
+
+        Se debe validar que la carta con la que se está tratando de hacer un movimiento no es ella misma,
+        además de que la carta esté disponible (no esté siendo tapada por otra(s))
+
+        De encontrar una jugada válida con la pirámide, se remueven ambas cartas, se pasan al success_pile
+        y se actualiza el juego para mostrar los cambios
+
+   4.3) De no encontrar movimiento en la pirámide, entonces se compara la carta seleccionada contra la
+        draw_pile 
+
+        if is_pair(selected_card, draw_pile_card):
+            return valid_match
+
+   4.4) De no encontrar movimiento con la draw_pile, entonces se compara la carta seleccionada contra la
+        waste_pile
+
+        if is_pair(selected_card, waste_pile_card):
+            return valid_match
+
+   4.5) De no encontrar movimiento con la waste_pile, simplemente se le indica al jugador que no hay
+        movimientos disponibles con la carta seleccionada
+
+    
+# Regla de hacer match entre la draw_pile y waste_pile
+
+1) Pyramid solitaire permite hacer parejas entre la draw_pile y waste_pile, por lo tanto, se debe agregar
+   una opción al menú de usuario para que se le indique al juego tratar de realizar un movimiento entre
+   la draw_pile y la waste_pile
+
+   La opción va a ser: 'd/D' 
+
+    if is_pair(draw_pile_card, waste_pile_card):
+        return valid_match
+
+
+# Regla sobre las cartas King
+
+1) Si la columna seleccionada es un King y es una carta válida, automáticamente se pasa a la success_pile
+
+2) Si al seleccionar new card en las opciones del jugador, sale un King, se pasa automáticamente a la
+   success_pile, hasta que esa carta sea diferente de un King
+
+3) Si al seleccionar new card, hay un King en la draw_pile, se pasa ese King automáticamente a la 
+   success_pile y se saca una nueva carta, hasta que esa carta sea diferente de un King
